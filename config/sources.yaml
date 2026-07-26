@@ -1,0 +1,576 @@
+# Contrat des sources CheckIt.AI.
+#
+# Les valeurs communes sont centralisées dans defaults. Le futur chargeur
+# src/config/source_config.py doit fusionner ces valeurs avec chaque source,
+# puis valider le contrat avant le lancement des extracteurs.
+
+defaults:
+  common:
+    enabled: true
+    language: null
+    country: "International"
+    category: "general"
+    max_articles: 100
+
+  api:
+    role: "acquisition"
+    pagination:
+      enabled: false
+      parameter: "page"
+      start: 1
+      max_pages: 1
+      page_size_parameter: null
+      page_size: null
+
+  rss:
+    role: "acquisition"
+
+  social:
+    role: "acquisition"
+
+  dataset:
+    role: "labeled_reference"
+    chunksize: 10000
+
+  scraper:
+    role: "labeled_reference"
+    respect_robots_txt: true
+    request_delay_seconds: 1.0
+
+  filters:
+    acquisition:
+      require_title: true
+      require_text: false
+      require_image: false
+      require_url: true
+      require_label: false
+      min_title_length: 10
+      min_text_length: 0
+      min_total_text_length: 30
+      remove_deleted_content: true
+      remove_duplicates: true
+      validate_urls: true
+      allowed_labels: []
+
+    labeled_reference:
+      require_title: true
+      require_text: true
+      require_image: false
+      require_url: false
+      require_label: true
+      min_title_length: 10
+      min_text_length: 20
+      min_total_text_length: 30
+      remove_deleted_content: true
+      remove_duplicates: true
+      validate_urls: false
+      allowed_labels:
+        - "fake"
+        - "real"
+        - "true"
+        - "false"
+
+    multimodal_reference:
+      require_title: true
+      require_text: false
+      require_image: false
+      require_url: false
+      require_label: true
+      min_title_length: 10
+      min_text_length: 0
+      min_total_text_length: 30
+      remove_deleted_content: true
+      remove_duplicates: true
+      validate_urls: false
+      allowed_labels:
+        - "fake"
+        - "real"
+        - "true"
+        - "false"
+        
+    fact_check_reference:
+      require_label: true
+      allowed_labels:
+        - "true"
+        - "false"
+        - "misleading"
+        - "partly_false"
+        - "unproven"
+
+rss_sources:
+  - name: "Le Monde"
+    source_id: "le_monde"
+    type: "rss"
+    role: "acquisition"
+    language: "fr"
+    country: "France"
+    category: "general"
+    url: "https://www.lemonde.fr/rss/une.xml"
+
+  - name: "Le Monde - International"
+    source_id: "le_monde_international"
+    type: "rss"
+    role: "acquisition"
+    language: "fr"
+    country: "France"
+    category: "international"
+    url: "https://www.lemonde.fr/international/rss_full.xml"
+
+  - name: "Franceinfo"
+    source_id: "franceinfo"
+    type: "rss"
+    role: "acquisition"
+    language: "fr"
+    country: "France"
+    category: "general"
+    url: "https://www.francetvinfo.fr/titres.rss"
+
+  - name: "BBC News"
+    source_id: "bbc_news"
+    type: "rss"
+    role: "acquisition"
+    language: "en"
+    country: "United Kingdom"
+    category: "general"
+    url: "https://feeds.bbci.co.uk/news/rss.xml"
+
+  - name: "BBC Technology"
+    source_id: "bbc_technology"
+    type: "rss"
+    role: "acquisition"
+    language: "en"
+    country: "United Kingdom"
+    category: "technology"
+    url: "https://feeds.bbci.co.uk/news/technology/rss.xml"
+
+  - name: "The Guardian - World"
+    source_id: "guardian_world"
+    type: "rss"
+    role: "acquisition"
+    language: "en"
+    country: "United Kingdom"
+    category: "international"
+    url: "https://www.theguardian.com/world/rss"
+
+api_sources:
+  newsdata:
+    name: "NewsData.io"
+    enabled: true
+    source_id: "newsdata"
+    type: "api"
+    role: "acquisition"
+    language: "fr"
+    country: "France"
+    category: "general"
+    max_articles: 100
+    endpoint: "https://newsdata.io/api/1/latest"
+    api_key_secret_name: "newsdata_api_key"
+    queries:
+      - languages: ["fr", "en"]
+        countries: ["fr"]
+        categories: ["technology", "politics", "science"]
+    pagination:
+      enabled: true
+      parameter: "page"
+      start: 1
+      max_pages: 5
+      page_size_parameter: null
+      page_size: null
+
+  gdelt:
+    name: "GDELT"
+    enabled: true
+    source_id: "gdelt"
+    type: "api"
+    role: "acquisition"
+    language: "en"
+    country: "International"
+    category: "general"
+    max_articles: 100
+    endpoint: "https://api.gdeltproject.org/api/v2/doc/doc"
+    api_key_secret_name: null
+    request_delay_seconds: 5.5
+    queries:
+      - languages: ["fr", "en"]
+        themes: ["POLITICS", "HEALTH", "SCIENCE", "TECHNOLOGY", "ENVIRONMENT", "ECONOMY", "EDUCATION", "CRIME"]
+        timespan: "1d"
+    pagination:
+      enabled: false
+      parameter: "page"
+      start: 1
+      max_pages: 1
+      page_size_parameter: null
+      page_size: null
+
+  gnews:
+    name: "GNews"
+    enabled: true
+    source_id: "gnews"
+    type: "api"
+    role: "acquisition"
+    language: "fr"
+    country: "France"
+    category: "general"
+    max_articles: 20
+    endpoint: "https://gnews.io/api/v4/top-headlines"
+    api_key_secret_name: "gnews_api_key"
+    queries:
+      - languages: ["fr", "en"]
+        countries: ["fr"]
+        categories: ["general", "world", "nation", "business", "technology", "entertainment", "sports", "science", "health"]
+    pagination:
+      enabled: true
+      parameter: "page"
+      start: 1
+      max_pages: 10
+      page_size_parameter: "max"
+      page_size: 10
+
+  newsapi:
+    name: "NewsAPI"
+    enabled: true
+    source_id: "newsapi"
+    type: "api"
+    role: "acquisition"
+    language: "fr"
+    country: "France"
+    category: "general"
+    max_articles: 100
+    endpoint: "https://newsapi.org/v2/everything"
+    api_key_secret_name: "newsapi_api_key"
+    queries:
+      - query: "politique"
+        languages: ["fr", "en"]
+      - query: "économie"
+        languages: ["fr", "en"]
+      - query: "technologie"
+        languages: ["fr", "en"]
+      - query: "science"
+        languages: ["fr", "en"]
+      - query: "santé"
+        languages: ["fr", "en"]
+    pagination:
+      enabled: true
+      parameter: "page"
+      start: 1
+      max_pages: 1
+      page_size_parameter: "pageSize"
+      page_size: 100
+
+  guardian_api:
+    name: "The Guardian Open Platform"
+    enabled: true
+    source_id: "guardian_api"
+    type: "api"
+    role: "acquisition"
+    language: "en"
+    country: "United Kingdom"
+    category: "general"
+    max_articles: 100
+    endpoint: "https://content.guardianapis.com/search"
+    api_key_secret_name: "guardian_api_key"
+
+    show_fields:
+      - headline
+      - trailtext
+      - bodytext
+      - thumbnail
+      - byline
+
+    queries:
+      - languages: ["en"]
+        sections:
+          - "world"
+          - "politics"
+          - "business"
+          - "technology"
+          - "science"
+          - "environment"
+          - "society"
+
+    pagination:
+      enabled: true
+      parameter: "page"
+      start: 1
+      max_pages: 5
+      page_size_parameter: "page-size"
+      page_size: 100
+      
+  currents:
+    name: "Currents News API"
+    enabled: true
+    source_id: "currents"
+    type: "api"
+    role: "acquisition"
+    endpoint: "https://api.currentsapi.services/v1/latest-news"
+    api_key_secret_name: "currents_api_key"
+    language:
+      - fr
+    country:
+      - fr
+    category:
+      - general
+      - technology
+      - science
+      - business
+      - health
+      - politics
+    queries:
+      - technologie
+      - science
+      - économie
+      - santé
+      - politique
+    max_articles: 100
+    pagination:
+      enabled: true
+      parameter: page_number
+      start: 1
+      max_pages: 5
+      page_size_parameter: page_size
+      page_size: 30
+
+  mediastack:
+    name: "Mediastack"
+    enabled: true
+    source_id: "mediastack"
+    type: "api"
+    role: "acquisition"
+    language: "fr"
+    country: "France"
+    category: "general"
+    max_articles: 100
+    endpoint: "https://api.mediastack.com/v1/news"
+    api_key_secret_name: "mediastack_api_key"
+    queries:
+      - languages: ["fr", "en"]
+        countries: ["fr"]
+        categories: ["general", "business", "technology", "science", "health", "sports", "entertainment"]
+    pagination:
+      enabled: true
+      parameter: "offset"
+      start: 0
+      max_pages: 5
+      page_size_parameter: "limit"
+      page_size: 100
+
+  google_fact_check:
+    name: "Google Fact Check Tools"
+    enabled: true
+    source_id: "google_fact_check"
+    type: "api"
+    role: "fact_check_reference"
+    language: "fr"
+    country: "International"
+    category: "fact_check"
+    max_articles: 100
+    endpoint: "https://factchecktools.googleapis.com/v1alpha1/claims:search"
+    api_key_secret_name: "google_fact_check_api_key"
+    queries:
+      - query: "politique"
+        languages: ["fr", "en"]
+      - query: "économie"
+        languages: ["fr", "en"]
+      - query: "santé"
+        languages: ["fr", "en"]
+      - query: "science"
+        languages: ["fr", "en"]
+      - query: "technologie"
+        languages: ["fr", "en"]
+      - query: "climat"
+        languages: ["fr", "en"]
+    pagination:
+      enabled: true
+      parameter: "pageToken"
+      start: null
+      max_pages: 5
+      page_size_parameter: "pageSize"
+      page_size: 100
+
+social_sources:
+  reddit:
+    name: "Reddit"
+    enabled: false
+    source_id: "reddit"
+    type: "social"
+    role: "acquisition"
+    language: "en"
+    country: "International"
+    category: "social"
+    max_articles: 100
+    client_id_secret_name: "reddit_client_id"
+    client_secret_secret_name: "reddit_client_secret"
+    subreddits: ["news", "worldnews", "technology", "science"]
+    listing: "new"
+    time_filter: "day"
+    include_nsfw: false
+    include_spoilers: true
+    include_stickied: false
+    filters:
+      min_total_text_length: 20
+      min_score: null
+      min_comments: null
+
+  mastodon:
+    name: "Mastodon"
+    enabled: false
+    source_id: "mastodon"
+    type: "social"
+    role: "acquisition"
+    language: "fr"
+    country: "International"
+    category: "social"
+    max_articles: 100
+    endpoint: "https://mastodon.social/api/v1/timelines/public"
+    access_token_secret_name: "mastodon_access_token"
+    local: false
+    remote: true
+    only_media: false
+    filters:
+      min_total_text_length: 20
+      remove_reblogs: true
+      remove_replies: true
+
+datasets:
+  - name: "Fakeddit"
+    enabled: true
+    source_id: "fakeddit"
+    type: "dataset"
+    role: "multimodal_reference"
+    language: "en"
+    country: "International"
+    category: "social"
+    max_articles: 1000
+    path: "data/datasets/fakeddit"
+    format: "tsv"
+    chunksize: 10000
+    label_mapping:
+      "0": "fake"
+      "1": "real"
+    filters:
+      require_title: true
+      require_text: false
+      require_image: false
+      require_url: false
+      require_label: true
+      validate_urls: true
+      min_title_length: 5
+      min_text_length: 0
+      min_total_text_length: 5
+      
+  - name: "FakeNewsNet"
+    enabled: true
+    source_id: "fakenewsnet"
+    type: "dataset"
+    role: "labeled_reference"
+    language: "en"
+    country: "United States"
+    category: "politics"
+    max_articles: 1000
+    path: "data/datasets/fakenewsnet"
+    format: "json"
+    chunksize: 10000
+    label_mapping:
+      "fake": "fake"
+      "real": "real"
+
+  - name: "ISOT Fake News Dataset"
+    enabled: true
+    source_id: "isot"
+    type: "dataset"
+    role: "labeled_reference"
+    language: "en"
+    country: "International"
+    category: "general"
+    max_articles: 1000
+    path: "data/datasets/isot"
+    format: "csv"
+    chunksize: 10000
+    files:
+      fake: "Fake.csv"
+      real: "True.csv"
+    label_mapping:
+      "fake": "fake"
+      "real": "real"
+
+  - name: "CoAID"
+    enabled: true
+    source_id: "coaid"
+    type: "dataset"
+    role: "labeled_reference"
+    language: "en"
+    country: "United States"
+    category: "health"
+    max_articles: 1000
+    path: "data/datasets/coaid"
+    format: "csv"
+    chunksize: 10000
+    label_mapping:
+      "fake": "fake"
+      "real": "real"
+      
+scraper_sources:
+  - name: "Full Fact"
+    enabled: true
+    source_id: "full_fact"
+    type: "scraper"
+    role: "fact_check_reference"
+    language: "en"
+    country: "United Kingdom"
+    category: "fact_check"
+    max_articles: 100
+    base_url: "https://fullfact.org"
+    start_urls:
+      - "https://fullfact.org/latest/"
+
+    selectors:
+      article: "main a[href^='/']"
+      link: "a[href]"
+      title: "main h1"
+      text: "main"
+      content: "main"
+      label: ".card-body.accent .card-text"
+      published_at: "main time"
+      author: "main a[href*='/about/team/'], main a[rel='author']"
+
+    respect_robots_txt: true
+    request_delay_seconds: 1.0
+
+    pagination:
+      enabled: true
+      parameter: "page"
+      start: 1
+      max_pages: 5
+      
+  - name: "Reuters Fact Check"
+    enabled: false
+    source_id: "reuters_fact_check"
+    type: "scraper"
+    role: "fact_check_reference"
+    language: "en"
+    country: "International"
+    category: "fact_check"
+    max_articles: 100
+    base_url: "https://www.reuters.com"
+
+    start_urls:
+      - "https://www.reuters.com/fact-check/"
+
+    selectors:
+      article: "article"
+      title: "h1"
+      link: "a[href]"
+      text: "p"
+      content: article
+      image: "img"
+      label: null
+      date: "time"
+
+    respect_robots_txt: true
+    request_delay_seconds: 1.0
+
+    pagination:
+      enabled: false
+      parameter: "page"
+      start: 1
+      max_pages: 1

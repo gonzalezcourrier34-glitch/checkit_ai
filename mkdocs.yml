@@ -1,0 +1,85 @@
+site_name: CheckIt.AI
+site_description: Pipeline d'acquisition de données multimodales pour la détection de fake news
+site_author: Stéphane Gonzalez
+
+theme:
+  name: material
+  language: fr
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+
+extra_javascript:
+  - https://unpkg.com/mermaid@11/dist/mermaid.min.js
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+nav:
+  - Accueil: index.md
+
+  - 1. Exploration des sources:
+    - Présentation: 01_exploration_sources/index.md
+    - Contexte: 01_exploration_sources/01_contexte.md
+    - Besoins fonctionnels: 01_exploration_sources/02_besoins.md
+    - Cas typiques de fake news multimodales: 01_exploration_sources/03_fake.md
+    - Critères d'évaluation: 01_exploration_sources/04_criteres.md
+    - Panorama des sources: 01_exploration_sources/05_panorama.md
+    - Datasets académiques: 01_exploration_sources/06_datasets.md
+    - APIs d'actualité: 01_exploration_sources/07_apis.md
+    - Flux RSS: 01_exploration_sources/08_flux_rss.md
+    - Réseaux sociaux: 01_exploration_sources/09_reseaux.md
+    - Comparaison des sources: 01_exploration_sources/10_comparaison.md
+    - Recommandations: 01_exploration_sources/11_recommandations.md
+    - Droits d'usage: 01_exploration_sources/12_droits.md
+    - Méthodes d'extraction: 01_exploration_sources/13_extraction.md
+    - Format de sortie: 01_exploration_sources/14_format_sortie.md
+    
+  - 2. Architecture: 
+      - Présentation: 02_architecture/index.md
+      - Architecture globale: 02_architecture/01_architecture.md
+      - Modèle de données: 02_architecture/02_modele_donnees.md
+      - Choix techniques: 02_architecture/03_choix.md
+      - Gestion des erreurs: 02_architecture/04_gestion_erreurs.md      
+
+  - 3. Pipeline:
+      - Présentation: 03_pipeline/index.md
+  
+  - 4. Schemas des données:
+      - Présentation: 04_schemas/index.md
+      
+  - 5. Tables Sql:
+      - Présentation: 05_structure_sql/index.md
+      - Tables SQL: 05_structure_sql/01_structure.md
+      - Tables SQL: 05_structure_sql/02_tables.md
+      - Les indexes: 05_structure_sql/03_indexs.md
+      - Les vues: 05_structure_sql/04_views.md
+      - Fonctions et procédures: 05_structure_sql/05_functions.md
+      - Securité : 05_structure_sql/06_security.md
+
+  - 6. Orchestration Airflow:
+      - Présentation: 06_dag/index.md
+      - DAG maître: 06_dag/01_master.md
+      - DAG d'extraction: 06_dag/02_extract.md
+      - DAG de transformation: 06_dag/03_transform.md
+      - DAG de chargement: 06_dag/04_load.md
+      - DAG de contrôle qualité: 06_dag/05_quality.md
+      - Communication entre les DAGs: 06_dag/06_communication.md
+      - Gestion des erreurs: 06_dag/07_error_handling.md
+      - Exécution d'un pipeline: 06_dag/08_execution.md
+
+  - 7. Résultats:
+      - Présentation: 07_resultats/index.md

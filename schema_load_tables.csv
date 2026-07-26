@@ -1,0 +1,139 @@
+﻿table_name;ordinal_position;column_name;data_type;is_nullable;column_default
+article_features;1;id;bigint;NO;
+article_features;2;article_id;character varying;NO;
+article_features;3;image_id;bigint;YES;
+article_features;4;pipeline_run_id;uuid;YES;
+article_features;5;feature_group;character varying;NO;
+article_features;6;feature_name;character varying;NO;
+article_features;7;feature_type;character varying;NO;
+article_features;8;feature_version;character varying;NO;'1.0'::character varying
+article_features;9;producer_name;character varying;YES;
+article_features;10;producer_version;character varying;YES;
+article_features;11;numeric_value;numeric;YES;
+article_features;12;text_value;text;YES;
+article_features;13;boolean_value;boolean;YES;
+article_features;14;json_value;jsonb;YES;
+article_features;15;vector_path;text;YES;
+article_features;16;vector_dimension;integer;YES;
+article_features;17;confidence;numeric;YES;
+article_features;18;feature_metadata;jsonb;NO;'{}'::jsonb
+article_features;19;computed_at;timestamp with time zone;NO;CURRENT_TIMESTAMP
+article_features;20;created_at;timestamp with time zone;NO;CURRENT_TIMESTAMP
+article_features;21;updated_at;timestamp with time zone;NO;CURRENT_TIMESTAMP
+article_labels;1;id;bigint;NO;
+article_labels;2;article_id;character varying;NO;
+article_labels;3;label;character varying;NO;
+article_labels;4;label_type;character varying;NO;
+article_labels;5;label_source;character varying;YES;
+article_labels;6;annotator;character varying;YES;
+article_labels;7;annotation_method;character varying;YES;
+article_labels;8;confidence;numeric;YES;
+article_labels;9;is_ground_truth;boolean;NO;false
+article_labels;10;is_active;boolean;NO;true
+article_labels;11;notes;text;YES;
+article_labels;12;label_metadata;jsonb;NO;'{}'::jsonb
+article_labels;13;labeled_at;timestamp with time zone;NO;CURRENT_TIMESTAMP
+article_labels;14;created_at;timestamp with time zone;NO;CURRENT_TIMESTAMP
+article_labels;15;updated_at;timestamp with time zone;NO;CURRENT_TIMESTAMP
+articles;1;id;character varying;NO;
+articles;2;source_id;bigint;NO;
+articles;3;pipeline_run_id;uuid;YES;
+articles;4;external_id;text;YES;
+articles;5;title;text;NO;
+articles;6;content;text;NO;''::text
+articles;7;original_url;text;YES;
+articles;8;canonical_url;text;YES;
+articles;9;author;text;YES;
+articles;10;language;character varying;YES;
+articles;11;category;text;YES;
+articles;12;published_at;timestamp with time zone;YES;
+articles;13;extracted_at;timestamp with time zone;NO;CURRENT_TIMESTAMP
+articles;14;transformed_at;timestamp with time zone;YES;
+articles;15;dataset_role;character varying;YES;
+articles;16;data_quality_status;character varying;NO;'pending'::character varying
+articles;17;rejection_reason;text;YES;
+articles;18;transformation_version;character varying;YES;
+articles;19;title_hash;character varying;YES;
+articles;20;content_hash;character varying;YES;
+articles;21;canonical_url_hash;character varying;YES;
+articles;22;raw_payload;jsonb;NO;'{}'::jsonb
+articles;23;created_at;timestamp with time zone;NO;CURRENT_TIMESTAMP
+articles;24;updated_at;timestamp with time zone;NO;CURRENT_TIMESTAMP
+images;1;id;bigint;NO;
+images;2;article_id;character varying;NO;
+images;3;remote_url;text;YES;
+images;4;local_path;text;YES;
+images;5;file_name;text;YES;
+images;6;file_extension;character varying;YES;
+images;7;file_format;character varying;YES;
+images;8;mime_type;character varying;YES;
+images;9;width;integer;YES;
+images;10;height;integer;YES;
+images;11;aspect_ratio;numeric;YES;
+images;12;size_bytes;bigint;YES;
+images;13;file_hash;character varying;YES;
+images;14;perceptual_hash;character varying;YES;
+images;15;download_duration_ms;integer;YES;
+images;16;image_position;integer;NO;0
+images;17;is_primary;boolean;NO;false
+images;18;blur_score;numeric;YES;
+images;19;brightness_score;numeric;YES;
+images;20;entropy_score;numeric;YES;
+images;21;is_valid;boolean;NO;false
+images;22;validation_status;character varying;NO;'pending'::character varying
+images;23;validation_error;text;YES;
+images;24;association_status;character varying;NO;'unchecked'::character varying
+images;25;association_score;numeric;YES;
+images;26;association_method;character varying;YES;
+images;27;downloaded_at;timestamp with time zone;YES;
+images;28;validated_at;timestamp with time zone;YES;
+images;29;associated_at;timestamp with time zone;YES;
+images;30;image_metadata;jsonb;NO;'{}'::jsonb
+images;31;created_at;timestamp with time zone;NO;CURRENT_TIMESTAMP
+images;32;updated_at;timestamp with time zone;NO;CURRENT_TIMESTAMP
+pipeline_runs;1;id;uuid;NO;gen_random_uuid()
+pipeline_runs;2;dag_id;character varying;YES;
+pipeline_runs;3;airflow_run_id;character varying;YES;
+pipeline_runs;4;pipeline_name;character varying;NO;
+pipeline_runs;5;pipeline_version;character varying;NO;
+pipeline_runs;6;code_version;character varying;YES;
+pipeline_runs;7;airflow_version;character varying;YES;
+pipeline_runs;8;status;character varying;NO;'running'::character varying
+pipeline_runs;9;started_at;timestamp with time zone;NO;CURRENT_TIMESTAMP
+pipeline_runs;10;finished_at;timestamp with time zone;YES;
+pipeline_runs;11;extraction_duration_seconds;numeric;YES;
+pipeline_runs;12;transformation_duration_seconds;numeric;YES;
+pipeline_runs;13;load_duration_seconds;numeric;YES;
+pipeline_runs;14;duration_seconds;numeric;YES;
+pipeline_runs;15;extracted_count;integer;NO;0
+pipeline_runs;16;transformed_count;integer;NO;0
+pipeline_runs;17;valid_count;integer;NO;0
+pipeline_runs;18;rejected_count;integer;NO;0
+pipeline_runs;19;loaded_count;integer;NO;0
+pipeline_runs;20;images_downloaded_count;integer;NO;0
+pipeline_runs;21;images_valid_count;integer;NO;0
+pipeline_runs;22;images_invalid_count;integer;NO;0
+pipeline_runs;23;peak_memory_mb;numeric;YES;
+pipeline_runs;24;average_cpu_percent;numeric;YES;
+pipeline_runs;25;error_message;text;YES;
+pipeline_runs;26;run_metadata;jsonb;NO;'{}'::jsonb
+pipeline_runs;27;created_at;timestamp with time zone;NO;CURRENT_TIMESTAMP
+pipeline_runs;28;updated_at;timestamp with time zone;NO;CURRENT_TIMESTAMP
+sources;1;id;bigint;NO;
+sources;2;source_key;character varying;NO;
+sources;3;display_name;character varying;NO;
+sources;4;source_type;character varying;NO;
+sources;5;base_url;text;YES;
+sources;6;default_language;character varying;YES;
+sources;7;reliability_score;numeric;YES;
+sources;8;is_active;boolean;NO;true
+sources;9;requires_api_key;boolean;NO;false
+sources;10;refresh_interval_minutes;integer;YES;
+sources;11;max_articles_per_run;integer;YES;
+sources;12;last_successful_run;timestamp with time zone;YES;
+sources;13;last_failed_run;timestamp with time zone;YES;
+sources;14;last_error;text;YES;
+sources;15;configuration;jsonb;NO;'{}'::jsonb
+sources;16;created_at;timestamp with time zone;NO;CURRENT_TIMESTAMP
+sources;17;updated_at;timestamp with time zone;NO;CURRENT_TIMESTAMP
+(137 rows)

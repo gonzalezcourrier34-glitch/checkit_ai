@@ -1,0 +1,82 @@
+[project]
+name = "checkit-ai"
+version = "0.1.0"
+description = "Pipeline ETL multimodal pour l'extraction, le traitement et la validation d'articles."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+
+# Dépendances métier installées dans l'image Airflow
+dependencies = [
+    "beautifulsoup4>=4.15.0",
+    "extruct>=0.18.0",
+    "feedparser>=6.0.12",
+    "httpx>=0.28.1",
+    "lxml>=6.1.1",
+    "pandas>=2.1.2,<2.2",
+    "pillow>=12.3.0",
+    "pillow-avif-plugin>=1.5.5",
+    "praw>=8.0.2",
+    "python-dateutil>=2.9.0.post0",
+    "python-dotenv>=1.2.2",
+    "pyyaml>=6.0.3",
+    "streamlit>=1.60.0",
+    "tenacity>=9.1.4",
+    "trafilatura>=2.1.0",
+    "w3lib>=2.4.1",
+]
+
+# Airflow uniquement pour l'exécution locale hors Docker
+[project.optional-dependencies]
+airflow = [
+    "apache-airflow==3.3.0",
+    "apache-airflow-providers-celery",
+    "apache-airflow-providers-postgres==6.8.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.15.22",
+]
+
+docs = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.7.6",
+]
+
+[tool.pytest.ini_options]
+minversion = "9.0"
+
+testpaths = [
+    "tests",
+]
+
+python_files = [
+    "test_*.py",
+]
+
+python_classes = [
+    "Test*",
+]
+
+python_functions = [
+    "test_*",
+]
+
+norecursedirs = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "logs",
+    "scripts",
+    "docs",
+    "data",
+    "shared",
+]
+
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+]
