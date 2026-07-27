@@ -19,7 +19,7 @@ from typing import Any
 
 import streamlit as st
 
-from dashboard.dashboard.dashboard_layout import (
+from dashboard.components.dashboard_layout import (
     apply_dashboard_layout,
     render_content_card,
     render_information_rows,
@@ -27,7 +27,7 @@ from dashboard.dashboard.dashboard_layout import (
     render_notice,
     render_page_header
 )
-from dashboard.dashboard.dashboard_ui_utils import (
+from dashboard.components.dashboard_ui_utils import (
     format_dag_name,
     format_datetime,
     format_number,

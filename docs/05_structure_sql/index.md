@@ -25,23 +25,45 @@ La base est conçue pour stocker les articles collectés, leurs images, les labe
 # Vue d’ensemble du schéma
 
 ```mermaid
-erDiagram
+flowchart LR
 
-    SOURCES ||--o{ ARTICLES : fournit
-    PIPELINE_RUNS ||--o{ ARTICLES : collecte
+    subgraph REFERENTIELS[Référentiels]
+        SOURCES[SOURCES]
+    end
 
-    ARTICLES ||--o{ IMAGES : possede
-    ARTICLES ||--o{ ARTICLE_LABELS : recoit
-    ARTICLES ||--o{ ARTICLE_FEATURES : genere
-    ARTICLES ||--o{ MODEL_PREDICTIONS : est_analyse
+    subgraph EXECUTION[Suivi des exécutions]
+        PIPELINE_RUNS[PIPELINE_RUNS]
+        PIPELINE_METRICS[PIPELINE_METRICS]
+        ETL_LOGS[ETL_LOGS]
+        DATASET_VERSIONS[DATASET_VERSIONS]
+    end
 
-    IMAGES ||--o{ ARTICLE_FEATURES : produit
+    subgraph DONNEES[Contenus collectés]
+        ARTICLES[ARTICLES]
+        IMAGES[IMAGES]
+        ARTICLE_LABELS[ARTICLE_LABELS]
+        ARTICLE_FEATURES[ARTICLE_FEATURES]
+    end
 
-    PIPELINE_RUNS ||--o{ PIPELINE_METRICS : mesure
-    PIPELINE_RUNS ||--o{ ETL_LOGS : journalise
-    PIPELINE_RUNS ||--o{ DATASET_VERSIONS : genere
-    PIPELINE_RUNS ||--o{ ARTICLE_FEATURES : produit
-    PIPELINE_RUNS ||--o{ MODEL_PREDICTIONS : produit
+    subgraph IA[Exploitation IA]
+        MODEL_PREDICTIONS[MODEL_PREDICTIONS]
+    end
+
+    SOURCES -->|fournit| ARTICLES
+    PIPELINE_RUNS -->|collecte| ARTICLES
+
+    ARTICLES -->|possède| IMAGES
+    ARTICLES -->|reçoit| ARTICLE_LABELS
+    ARTICLES -->|génère| ARTICLE_FEATURES
+    ARTICLES -->|est analysé| MODEL_PREDICTIONS
+
+    PIPELINE_RUNS -->|mesure| PIPELINE_METRICS
+    PIPELINE_RUNS -->|journalise| ETL_LOGS
+    PIPELINE_RUNS -->|versionne| DATASET_VERSIONS
+    PIPELINE_RUNS -->|produit| ARTICLE_FEATURES
+    PIPELINE_RUNS -->|produit| MODEL_PREDICTIONS
+
+    IMAGES -->|enrichit| ARTICLE_FEATURES
 ```
 
 ---

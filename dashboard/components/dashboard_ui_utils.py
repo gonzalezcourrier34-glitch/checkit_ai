@@ -215,6 +215,25 @@ def format_duration(
 
     return " ".join(parts)
 
+# prepare
+
+def prepare_chart_dataframe(
+    dataframe: pd.DataFrame
+) -> pd.DataFrame:
+    """Convertit toutes les colonnes numériques en float pour Altair."""
+
+    dataframe = dataframe.copy()
+
+    for column in dataframe.columns:
+        dataframe[column] = pd.to_numeric(
+            dataframe[column],
+            errors="ignore"
+        )
+
+        if pd.api.types.is_numeric_dtype(dataframe[column]):
+            dataframe[column] = dataframe[column].astype(float)
+
+    return dataframe
 
 # Données
 

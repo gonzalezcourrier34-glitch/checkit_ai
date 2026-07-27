@@ -27,10 +27,12 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from dashboard.services.dashboard_service_utils import (
+    calculate_duration_seconds,
     calculate_percentage,
     normalize_limit,
     normalize_offset
 )
+
 from src.logger import get_logger
 
 logger = get_logger(__name__)
@@ -1082,34 +1084,14 @@ def get_run_duration_seconds(
         except (TypeError, ValueError):
             pass
 
-    start_date = parse_datetime(
+    state = str(run.get("state") or "").lower()
+
+    return calculate_duration_seconds(
         run.get("start_date")
         or run.get("queued_at")
-        or run.get("logical_date")
-    )
-
-    end_date = parse_datetime(
-        run.get("end_date")
-    )
-
-    if start_date is None:
-        return None
-
-    if end_date is None:
-        state = str(run.get("state") or "").lower()
-
-        if state not in TERMINAL_DAG_RUN_STATES:
-            end_date = datetime.now(timezone.utc)
-        else:
-            return None
-
-    if start_date.tzinfo is None:
-        start_date = start_date.replace(tzinfo=timezone.utc)
-
-    if end_date.tzinfo is None:
-        end_date = end_date.replace(tzinfo=timezone.utc)
-
-    return round(
-        max(0.0, (end_date - start_date).total_seconds()),
-        3
+        or run.get("logical_date"),
+        run.get("end_date"),
+        use_current_time=(
+            state not in TERMINAL_DAG_RUN_STATES
+        )
     )

@@ -19,7 +19,7 @@ from typing import Any
 import pandas as pd
 import streamlit as st
 
-from dashboard.dashboard.dashboard_layout import (
+from dashboard.components.dashboard_layout import (
     apply_dashboard_layout,
     render_information_rows,
     render_layout_section_header,
@@ -27,7 +27,7 @@ from dashboard.dashboard.dashboard_layout import (
     render_notice,
     render_page_header
 )
-from dashboard.dashboard.dashboard_ui_utils import (
+from dashboard.components.dashboard_ui_utils import (
     calculate_duration_seconds,
     format_dag_name,
     format_datetime,
@@ -48,6 +48,13 @@ from dashboard.services.dashboard_airflow_service import (
     get_run_duration_seconds,
     get_task_instances,
     get_task_log
+)
+from dashboard.components.dashboard_kpi import (
+    clear_pipeline_kpi_cache,
+    render_pipeline_history_kpi_section,
+    render_pipeline_kpi_section,
+    render_pipeline_quality_kpi_section,
+    render_pipeline_sources_kpi_section
 )
 from src.logger import get_logger
 
@@ -1061,7 +1068,7 @@ def prepare_failures_dataframe(
 # Actualisation
 
 def clear_pipeline_cache() -> None:
-    """Supprime le cache utilisé par la page."""
+    """Supprime les caches Airflow et KPI de la page."""
 
     load_health_summary.clear()
     load_dag_overview.clear()
@@ -1070,6 +1077,7 @@ def clear_pipeline_cache() -> None:
     load_task_instances.clear()
     load_recent_failures.clear()
     load_task_log.clear()
+    clear_pipeline_kpi_cache()
 
 
 # Page
@@ -1080,8 +1088,9 @@ def render_pipeline_page() -> None:
     apply_dashboard_layout(accent="blue")
     render_header()
 
-    overview_tab, runs_tab, failures_tab = st.tabs([
+    overview_tab, kpi_tab, runs_tab, failures_tab = st.tabs([
         "📡 Vue générale",
+        "🎯 KPI et qualité",
         "🧩 Exécutions et tâches",
         "🚨 Incidents"
     ])
@@ -1092,6 +1101,26 @@ def render_pipeline_page() -> None:
         render_dag_overview_section()
         st.divider()
         render_run_summary_section()
+
+    with kpi_tab:
+        summary_tab, quality_tab, sources_tab, history_tab = st.tabs([
+            "🎯 Synthèse",
+            "🧪 Qualité",
+            "📰 Sources",
+            "📈 Historique"
+        ])
+
+        with summary_tab:
+            render_pipeline_kpi_section()
+
+        with quality_tab:
+            render_pipeline_quality_kpi_section()
+
+        with sources_tab:
+            render_pipeline_sources_kpi_section()
+
+        with history_tab:
+            render_pipeline_history_kpi_section()
 
     with runs_tab:
         render_runs_section()

@@ -16,7 +16,7 @@ from typing import Any
 
 import streamlit as st
 
-from dashboard.dashboard.dashboard_ui_utils import (
+from dashboard.components.dashboard_ui_utils import (
     format_number,
     format_status
 )

@@ -19,7 +19,7 @@ from typing import Any
 import pandas as pd
 import streamlit as st
 
-from dashboard.dashboard.dashboard_layout import (
+from dashboard.components.dashboard_layout import (
     apply_dashboard_layout,
     render_information_rows,
     render_layout_section_header,
@@ -27,7 +27,12 @@ from dashboard.dashboard.dashboard_layout import (
     render_page_header,
     render_result_summary
 )
-from dashboard.dashboard.dashboard_ui_utils import (
+from dashboard.components.dashboard_kpi import (
+    clear_data_kpi_cache,
+    is_valid_image_row,
+    render_data_kpi_section
+)
+from dashboard.components.dashboard_ui_utils import (
     format_boolean,
     format_datetime,
     format_number,
@@ -46,7 +51,6 @@ from dashboard.services.dashboard_postgres_service import (
     get_data_completeness,
     get_data_completeness_by_source,
     get_data_completeness_by_source_type,
-    get_database_overview,
     get_feature_distribution,
     get_image_completeness,
     get_image_quality_summary,
@@ -139,13 +143,6 @@ RATE_COLUMN_LABELS = {
 
 
 # Cache
-
-@st.cache_data(ttl=30, show_spinner=False)
-def load_database_overview() -> dict[str, Any]:
-    """Charge les principaux indicateurs PostgreSQL."""
-
-    return get_database_overview()
-
 
 @st.cache_data(ttl=60, show_spinner=False)
 def load_sources_summary() -> list[dict[str, Any]]:
@@ -312,73 +309,6 @@ def render_header() -> None:
             "Qualité des données"
         ]
     )
-
-
-# Vue d'ensemble
-
-def render_overview_section() -> None:
-    """Affiche les principaux indicateurs de la base."""
-
-    render_layout_section_header(
-        "📊",
-        "Vue d'ensemble",
-        "Volumes stockés et couverture des enrichissements associés."
-    )
-
-    try:
-        overview = load_database_overview()
-    except Exception as error:
-        logger.warning(
-            "Impossible de charger la vue d'ensemble PostgreSQL : %s",
-            error
-        )
-
-        st.error(
-            "Les indicateurs PostgreSQL ne sont pas disponibles."
-        )
-
-        with st.expander("Détail technique"):
-            st.code(str(error))
-
-        return
-
-    render_metric_cards([
-        (
-            "📰 Articles",
-            format_number(overview.get("articles"))
-        ),
-        (
-            "🖼️ Images",
-            format_number(overview.get("images"))
-        ),
-        (
-            "🏷️ Labels",
-            format_number(overview.get("article_labels"))
-        ),
-        (
-            "🧩 Features",
-            format_number(overview.get("article_features"))
-        )
-    ])
-
-    render_metric_cards([
-        (
-            "🌐 Sources",
-            format_number(overview.get("sources"))
-        ),
-        (
-            "Couverture images",
-            format_percentage(overview.get("image_coverage"))
-        ),
-        (
-            "Couverture labels",
-            format_percentage(overview.get("label_coverage"))
-        ),
-        (
-            "Couverture features",
-            format_percentage(overview.get("feature_coverage"))
-        )
-    ])
 
 
 # Sources
@@ -681,7 +611,9 @@ def render_image_distribution() -> None:
         return
 
     dataframe["Valide"] = dataframe["is_valid"].map(
-        format_boolean
+        lambda value: format_boolean(
+            is_valid_image_row({"is_valid": value})
+        )
     )
 
     dataframe["Statut"] = dataframe[
@@ -1747,9 +1679,9 @@ def render_related_table(
 # Actualisation
 
 def clear_data_cache() -> None:
-    """Supprime le cache utilisé par la page."""
+    """Supprime les caches utilisés par la page Données."""
 
-    load_database_overview.clear()
+    clear_data_kpi_cache()
     load_sources_summary.clear()
     load_source_type_distribution.clear()
     load_language_distribution.clear()
@@ -1776,22 +1708,24 @@ def render_data_page() -> None:
     apply_dashboard_layout(accent="teal")
     render_header()
 
-    overview_tab, quality_tab, articles_tab = st.tabs([
+    overview_tab, kpi_tab, quality_tab, articles_tab = st.tabs([
         "📊 Vue générale",
+        "🎯 KPI",
         "✅ Qualité et complétude",
         "📰 Explorateur"
     ])
 
     with overview_tab:
-        render_overview_section()
+        render_history_section()
         st.divider()
         render_sources_section()
         st.divider()
         render_distributions_section()
         st.divider()
-        render_history_section()
-        st.divider()
         render_features_section()
+
+    with kpi_tab:
+        render_data_kpi_section()
 
     with quality_tab:
         render_completeness_section()
