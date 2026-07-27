@@ -2,11 +2,15 @@
 
 ## Objectif
 
-Le DAG **`checkit_quality`** constitue la dernière étape du pipeline CheckIt.AI.
+Le DAG **`checkit_quality`** constitue la dernière étape du pipeline **CheckIt.AI**.
 
-Son rôle est d'évaluer la qualité des données chargées dans PostgreSQL en calculant différents indicateurs de performance (KPI) et en les comparant à des seuils prédéfinis.
+Son rôle est d'évaluer la qualité des données chargées dans PostgreSQL en calculant différents indicateurs (KPI), puis de comparer ces résultats aux seuils de qualité définis pour le pipeline.
 
-Contrairement aux étapes précédentes, ce DAG ne modifie aucune donnée. Il analyse uniquement les informations présentes dans la base afin de déterminer si le lot satisfait les exigences de qualité fixées par le projet.
+Contrairement aux étapes précédentes, ce DAG ne modifie aucune donnée métier. Il analyse uniquement les informations présentes dans PostgreSQL afin de déterminer si le lot respecte les exigences de qualité du projet.
+
+J'ai choisi de séparer cette étape du reste du pipeline afin d'isoler complètement les contrôles qualité des traitements d'acquisition, de transformation et de chargement.
+
+Comme pour les autres DAGs, les données volumineuses restent dans le dossier partagé du lot. Seuls les identifiants, les chemins des fichiers et quelques manifestes légers transitent via les XCom. :contentReference[oaicite:0]{index=0}
 
 ---
 
@@ -15,196 +19,295 @@ Contrairement aux étapes précédentes, ce DAG ne modifie aucune donnée. Il an
 Le DAG de contrôle qualité réalise les opérations suivantes :
 
 - lecture du rapport de chargement ;
-- récupération des informations de l'exécution du pipeline ;
+- récupération de l'identifiant d'exécution PostgreSQL ;
 - calcul des indicateurs de qualité ;
-- comparaison avec les seuils définis ;
-- génération d'un rapport qualité ;
+- comparaison des résultats avec les seuils configurés ;
+- génération du rapport qualité ;
 - validation ou rejet du lot.
 
-Le DAG intervient uniquement après le chargement complet des données dans PostgreSQL.
+Cette étape intervient uniquement une fois le chargement PostgreSQL terminé.
 
 ---
 
 ## Architecture
 
+Le DAG est organisé en trois tâches principales.
+
 ```mermaid
 flowchart LR
 
-A[03_load_report.json]
+A[prepare_batch]
 
-A --> B[Lecture du rapport]
+A --> B[calculate_quality_kpis]
 
-B --> C[Calcul des KPI]
+B --> C[validate_quality_thresholds]
 
-C --> D[Comparaison avec les seuils]
-
-D --> E[04_quality_report.json]
-
-D --> F{Seuils respectés ?}
-
-F -->|Oui| G[Pipeline validé]
-
-F -->|Non| H[Échec du DAG]
+C --> D[04_quality_report.json]
 ```
+
+Chaque tâche possède une responsabilité bien définie.
+
+Cette organisation facilite la lecture des traitements dans Airflow et permet d'identifier rapidement l'étape responsable d'une éventuelle erreur.
 
 ---
 
-## Entrées
+## Paramètres reçus
 
-Le DAG utilise principalement deux sources d'information.
+Le DAG reçoit les informations transmises par le DAG maître.
+
+Les principaux paramètres utilisés sont :
+
+| Paramètre | Description |
+|------------|-------------|
+| `batch_id` | identifiant unique du lot |
+| `parent_dag_id` | identifiant du DAG maître |
+| `parent_run_id` | identifiant de l'exécution |
+| `logical_date` | date logique |
+| `triggered_at` | date de déclenchement |
+| `quality_thresholds` | seuils qualité à appliquer |
+
+Lorsque les seuils ne sont pas explicitement fournis, le DAG utilise automatiquement ses seuils de qualité par défaut. :contentReference[oaicite:1]{index=1}
+
+---
+
+## Sources utilisées
+
+Le DAG exploite deux sources d'information.
 
 ### Rapport de chargement
 
-```
+Le rapport produit par le DAG précédent :
+
+```text
 03_load_report.json
 ```
 
 Ce document fournit notamment :
 
 - l'identifiant du lot ;
-- l'identifiant de l'exécution PostgreSQL ;
-- les informations générales sur le chargement.
+- l'identifiant de l'exécution PostgreSQL (`pipeline_run_id`) ;
+- le statut du chargement.
 
 ---
 
 ### Base PostgreSQL
 
-Les indicateurs sont calculés directement à partir des tables de la base de données.
+Les indicateurs sont calculés directement à partir des données présentes dans PostgreSQL.
 
-Les principales tables interrogées sont :
+Le DAG interroge notamment les tables :
 
-- pipeline_runs ;
-- articles ;
-- images ;
-- article_labels ;
-- article_features ;
-- sources.
+- `pipeline_runs` ;
+- `articles` ;
+- `images` ;
+- `article_labels` ;
+- `article_features` ;
+- `sources`.
 
-Le calcul des KPI repose donc sur les données réellement chargées et non sur les fichiers intermédiaires du pipeline.
+Les KPI reposent donc sur les données réellement enregistrées dans la base et non sur les fichiers intermédiaires du pipeline.
 
 ---
 
-## Calcul des indicateurs
+## Étape 1 : préparation du lot
 
-Le DAG calcule plusieurs indicateurs permettant d'évaluer la qualité globale du lot.
+La première tâche prépare le contrôle qualité.
 
-Parmi les principaux KPI :
+Elle réalise notamment :
+
+- la lecture du rapport de chargement ;
+- la vérification de l'identifiant du lot ;
+- la récupération du `pipeline_run_id` ;
+- le contrôle du statut du chargement ;
+- le chargement des seuils qualité.
+
+Si le chargement précédent n'est pas terminé avec succès, le contrôle qualité est immédiatement interrompu.
+
+À la fin de cette étape, un manifeste léger est transmis à la tâche suivante.
+
+---
+
+## Étape 2 : calcul des KPI
+
+La deuxième tâche interroge PostgreSQL afin de calculer l'ensemble des indicateurs de qualité.
+
+Les principaux indicateurs calculés concernent :
+
+### Articles
 
 - nombre total d'articles ;
 - nombre d'articles valides ;
+- nombre de titres manquants ;
+- nombre de contenus manquants ;
+- nombre d'URL canoniques manquantes ;
+- nombre de langues manquantes ;
+- nombre d'URL dupliquées.
+
+### Images
+
+- nombre total d'images ;
 - nombre d'images valides ;
 - nombre d'images invalides ;
-- nombre de labels ;
-- nombre de caractéristiques calculées ;
-- répartition des langues ;
-- répartition des sources.
+- nombre d'images sans statut ;
+- nombre d'images sans fichier local.
 
-Des pourcentages sont également calculés afin de faciliter l'interprétation des résultats.
+### Labels
+
+- nombre de labels ;
+- nombre de labels de vérité terrain (*ground truth*).
+
+### Caractéristiques
+
+- nombre total de caractéristiques ;
+- nombre d'articles identifiés comme multimodaux.
+
+Le DAG calcule également plusieurs répartitions, notamment :
+
+- la distribution des langues ;
+- la répartition des sources.
+
+Enfin, différents taux sont calculés automatiquement afin de faciliter les comparaisons entre plusieurs lots.
+
+Le rapport intermédiaire est ensuite enregistré dans :
+
+```text
+04_quality_report.json
+```
+
+avec l'ensemble des métriques calculées. :contentReference[oaicite:2]{index=2}
 
 ---
 
-## Contrôle des seuils
+## Calcul des taux
 
-Chaque indicateur est comparé à une valeur minimale ou maximale définie dans la configuration du pipeline.
+À partir des compteurs calculés, plusieurs indicateurs sont produits automatiquement.
 
-Les principaux seuils sont les suivants.
+Parmi eux :
+
+- taux d'articles valides ;
+- taux de titres manquants ;
+- taux de contenus manquants ;
+- taux d'URL dupliquées ;
+- taux d'articles possédant une image ;
+- taux d'images valides ;
+- taux d'images invalides ;
+- taux d'images sans statut ;
+- taux d'articles annotés ;
+- taux de labels de vérité terrain ;
+- taux d'articles multimodaux.
+
+Ces indicateurs facilitent le suivi de la qualité des données au fil des exécutions du pipeline.
+
+---
+
+## Étape 3 : validation des seuils
+
+La dernière tâche compare les indicateurs calculés avec les seuils de qualité configurés.
+
+Les principaux contrôles portent sur :
 
 | Contrôle | Objectif |
 |----------|----------|
 | Nombre minimal d'articles | éviter un lot vide |
 | Taux minimal d'articles valides | garantir la qualité globale |
 | Taux maximal de titres manquants | assurer la qualité documentaire |
-| Taux maximal de contenu manquant | garantir la richesse des données |
-| Taux maximal de doublons | limiter les redondances |
-| Taux maximal d'images invalides | garantir le caractère multimodal |
+| Taux maximal de contenus manquants | garantir des données exploitables |
+| Taux maximal d'URL dupliquées | limiter les doublons |
+| Taux maximal d'images invalides | garantir la qualité multimodale |
 
-Ces seuils peuvent être adaptés sans modifier le fonctionnement du DAG.
+Chaque violation détectée est enregistrée dans le rapport qualité.
 
----
-
-## Exemple de calcul
-
-Le taux d'articles valides est calculé selon la formule suivante :
-
-```text
-Articles valides
-──────────────────────── × 100
-Nombre total d'articles
-```
-
-Le même principe est appliqué aux autres indicateurs.
-
-Cette approche permet de comparer facilement plusieurs lots indépendamment de leur taille.
+Lorsque tous les seuils sont respectés, le lot est déclaré conforme.
 
 ---
 
 ## Rapport qualité
 
-À la fin du traitement, le DAG génère :
+Le DAG produit le fichier suivant.
 
-```
+```text
 04_quality_report.json
 ```
 
-Ce rapport contient :
+Ce rapport contient notamment :
 
-- les indicateurs calculés ;
+- l'identifiant du lot ;
+- l'identifiant de l'exécution PostgreSQL ;
+- le statut du contrôle qualité ;
+- l'ensemble des KPI calculés ;
+- les taux associés ;
 - les seuils utilisés ;
-- le résultat des contrôles ;
 - les éventuelles violations détectées ;
-- la date de génération.
+- les durées des différentes tâches.
 
-Il constitue le document de référence permettant d'évaluer la qualité d'un lot.
+Ce document constitue la synthèse finale de la qualité du lot.
 
 ---
 
 ## Gestion des erreurs
 
-Lorsque l'un des seuils n'est pas respecté, le DAG est volontairement interrompu.
+Le DAG interrompt volontairement son exécution lorsqu'une erreur critique est détectée.
 
 Par exemple :
 
-- nombre d'articles insuffisant ;
-- trop de contenus manquants ;
-- trop de doublons ;
-- taux d'images invalides supérieur au seuil autorisé.
+- rapport de chargement absent ;
+- `pipeline_run_id` manquant ;
+- rapport appartenant à un autre lot ;
+- seuil de qualité invalide ;
+- métriques incohérentes ;
+- seuil de qualité non respecté.
 
-Le pipeline est alors considéré comme non conforme.
+Lorsqu'un ou plusieurs contrôles échouent, les violations sont enregistrées dans le rapport qualité avant que le DAG ne soit interrompu.
 
-Cette stratégie permet d'éviter qu'un jeu de données de mauvaise qualité soit utilisé pour entraîner ou évaluer des modèles d'intelligence artificielle.
+Cette stratégie permet d'empêcher qu'un lot non conforme soit considéré comme valide.
+
+---
+
+## Communication entre les tâches
+
+Les métriques détaillées ne transitent jamais directement dans les XCom.
+
+J'ai choisi de transmettre uniquement :
+
+- l'identifiant du lot ;
+- l'identifiant de l'exécution PostgreSQL ;
+- les seuils utilisés ;
+- les chemins des fichiers ;
+- quelques indicateurs synthétiques.
+
+Cette approche limite la quantité de données échangées entre les tâches tout en conservant un suivi complet du pipeline.
 
 ---
 
 ## Sorties
 
-Le DAG produit le fichier suivant :
+À l'issue du traitement, le DAG produit un unique fichier :
 
-```
+```text
 04_quality_report.json
 ```
 
-Ce document synthétise l'ensemble des indicateurs de qualité calculés au cours du traitement.
+Ce document constitue le rapport final du pipeline.
+
+Il rassemble l'ensemble des indicateurs de qualité calculés ainsi que le résultat des différents contrôles.
 
 ---
 
 ## Avantages
 
-Le contrôle qualité constitue une étape essentielle du pipeline.
+Cette architecture présente plusieurs avantages.
 
-Il permet notamment :
-
-- d'évaluer objectivement la qualité des données ;
-- de détecter rapidement les anomalies ;
-- de suivre l'évolution de la qualité au fil des exécutions ;
-- de produire des indicateurs exploitables ;
-- de garantir la fiabilité du jeu de données final.
+- Les contrôles qualité sont totalement indépendants des traitements métier.
+- Les KPI sont calculés directement depuis PostgreSQL.
+- Les seuils peuvent être modifiés sans modifier le code du DAG.
+- Les violations sont clairement identifiées.
+- Les indicateurs sont comparables d'un lot à l'autre.
+- Le rapport final centralise toutes les informations relatives à la qualité du pipeline.
 
 ---
 
 ## Résumé
 
-Le DAG **`checkit_quality`** clôt le pipeline CheckIt.AI en évaluant la qualité des données stockées dans PostgreSQL.
+Le DAG **`checkit_quality`** clôt le pipeline **CheckIt.AI** en évaluant objectivement la qualité des données enregistrées dans PostgreSQL.
 
-Grâce au calcul automatique de plusieurs indicateurs et à la comparaison avec des seuils configurables, il garantit que seuls les lots respectant les exigences du projet sont considérés comme conformes.
+J'ai choisi de le découper en trois tâches spécialisées afin de distinguer la préparation du contrôle, le calcul des indicateurs et la validation des seuils.
 
-Cette étape constitue un mécanisme de validation essentiel avant toute exploitation des données par les futurs modèles d'intelligence artificielle.
+À l'issue de cette étape, le pipeline dispose d'un rapport complet décrivant les performances du lot ainsi que les éventuelles violations détectées, garantissant que seules des données conformes pourront être exploitées pour les traitements ultérieurs.

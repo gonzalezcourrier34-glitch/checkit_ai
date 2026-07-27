@@ -2,13 +2,15 @@
 
 ## Objectif
 
-Le DAG **`checkit_transform`** constitue la deuxième étape du pipeline CheckIt.AI.
+Le DAG **`checkit_transform`** constitue la deuxième étape du pipeline **CheckIt.AI**.
 
-Son rôle est de transformer les articles extraits en un ensemble de structures adaptées au modèle de données PostgreSQL.
+Son rôle est de transformer les articles produits par le DAG d'extraction en un ensemble de collections directement compatibles avec le modèle relationnel PostgreSQL.
 
-Contrairement au DAG d'extraction, cette étape ne collecte aucune nouvelle donnée. Elle restructure les informations existantes afin de préparer leur insertion en base de données.
+Contrairement au DAG d'extraction, cette étape ne collecte aucune nouvelle donnée. Elle restructure uniquement les informations déjà extraites afin de préparer leur chargement dans la base de données.
 
-Le résultat de cette étape est un ensemble de fichiers JSON correspondant aux différentes tables de la base PostgreSQL.
+J'ai choisi de découper ce DAG en plusieurs tâches spécialisées afin de rendre son exécution plus lisible dans Airflow, de simplifier les reprises sur erreur et de limiter les échanges de données entre les tâches.
+
+Comme pour le DAG d'extraction, les données métier volumineuses restent dans le dossier partagé du lot. Seuls des manifestes légers sont échangés via les XCom. :contentReference[oaicite:0]{index=0}
 
 ---
 
@@ -17,172 +19,171 @@ Le résultat de cette étape est un ensemble de fichiers JSON correspondant aux 
 Le DAG de transformation réalise les opérations suivantes :
 
 - lecture des articles extraits ;
-- nettoyage et normalisation des données ;
-- génération des différentes structures métier ;
-- séparation des informations par table PostgreSQL ;
-- contrôle de cohérence des données produites ;
-- génération du rapport de transformation.
+- contrôle du lot reçu ;
+- transformation des articles vers les entités PostgreSQL ;
+- validation de la cohérence des collections produites ;
+- génération des différents fichiers JSON ;
+- production du rapport de transformation.
 
-Cette étape ne réalise aucun accès à PostgreSQL.
+Cette étape ne réalise aucun accès direct à PostgreSQL.
 
 ---
 
 ## Architecture
 
+Le DAG est organisé en trois tâches principales.
+
 ```mermaid
 flowchart LR
 
-A[01_extracted_articles.json]
+A[prepare_batch]
 
-A --> B[Lecture du lot]
+A --> B[transform_payload]
 
-B --> C[Transformation]
+B --> C[finalize_batch]
 
-C --> D[Articles]
+C --> D[02_articles_ready.json]
 
-C --> E[Images]
+C --> E[02_images_ready.json]
 
-C --> F[Labels]
+C --> F[02_labels_ready.json]
 
-C --> G[Features]
+C --> G[02_features_ready.json]
 
-D --> H[02_articles_ready.json]
-
-E --> I[02_images_ready.json]
-
-F --> J[02_labels_ready.json]
-
-G --> K[02_features_ready.json]
-
-H --> L[Rapport]
-
-I --> L
-
-J --> L
-
-K --> L
+C --> H[02_transformation_report.json]
 ```
+
+Chaque tâche possède une responsabilité unique.
+
+Cette organisation améliore la lisibilité du pipeline dans Airflow tout en facilitant la reprise d'une étape en cas d'erreur.
 
 ---
 
-## Entrées
+## Paramètres reçus
 
-Le DAG lit le dossier partagé créé par le DAG d'extraction.
+Le DAG reçoit les informations transmises par le DAG maître.
 
-```
-/opt/airflow/shared/lots/<batch_id>/
-```
+Les principaux paramètres utilisés sont :
 
-Le principal fichier utilisé est :
+| Paramètre | Description |
+|------------|-------------|
+| `batch_id` | identifiant unique du lot |
+| `parent_dag_id` | identifiant du DAG maître |
+| `parent_run_id` | identifiant de l'exécution du DAG maître |
+| `logical_date` | date logique de l'exécution |
+| `triggered_at` | date de déclenchement |
+| `articles_file` | chemin du fichier d'entrée (optionnel) |
 
-```
+Lorsque le chemin du fichier d'entrée n'est pas fourni, le DAG utilise automatiquement :
+
+```text
 01_extracted_articles.json
 ```
 
-Il contient l'ensemble des articles validés après le traitement des images.
+présent dans le dossier partagé du lot. :contentReference[oaicite:1]{index=1}
 
 ---
 
-## Transformation des données
+## Étape 1 : préparation du lot
 
-Chaque article est analysé afin de répartir les informations dans les différentes structures correspondant au modèle relationnel.
+La première tâche prépare la transformation.
 
-Cette séparation permet de limiter la redondance des informations et de respecter les principes de normalisation d'une base de données relationnelle.
+Elle réalise notamment :
 
-Le traitement est entièrement réalisé par le **database transformer**.
+- la récupération du `batch_id` ;
+- la préparation du dossier partagé ;
+- la recherche du fichier d'entrée ;
+- la lecture des articles ;
+- la vérification de la structure JSON ;
+- le comptage des éventuels éléments ignorés.
 
----
+Si aucun article exploitable n'est présent dans le fichier d'entrée, le DAG s'interrompt immédiatement.
 
-## Génération des articles
-
-Les informations textuelles sont extraites afin d'alimenter la table **articles**.
-
-Par exemple :
-
-- titre ;
-- contenu ;
-- auteur ;
-- langue ;
-- catégorie ;
-- date de publication ;
-- indicateurs de qualité ;
-- informations multimodales.
-
-Chaque article reçoit un identifiant unique qui permettra de relier les autres tables.
+À la fin de cette étape, seul un manifeste léger est transmis à la tâche suivante.
 
 ---
 
-## Génération des images
+## Étape 2 : transformation des données
 
-Les informations relatives aux images sont ensuite séparées.
+La deuxième tâche réalise la transformation principale.
 
-Parmi les informations produites :
+Chaque article est converti vers le modèle relationnel utilisé par PostgreSQL grâce au **Database Transformer**.
 
-- chemin local ;
-- URL distante ;
-- dimensions ;
-- taille du fichier ;
-- statut de validation ;
-- format ;
-- informations techniques.
+Les informations sont réparties dans plusieurs collections :
 
-Chaque image reste associée à son article grâce à l'identifiant de celui-ci.
+- articles ;
+- images ;
+- labels ;
+- caractéristiques (*features*).
 
----
+Cette séparation permet de limiter la redondance des données et de respecter la structure de la base relationnelle.
 
-## Génération des labels
+Durant cette étape, plusieurs statistiques sont également calculées, notamment :
 
-Lorsque des annotations sont disponibles, elles sont regroupées dans une structure indépendante.
+- le nombre d'articles transformés ;
+- le nombre d'articles supprimés ;
+- le nombre d'images téléchargées ;
+- le nombre d'images valides ;
+- le nombre d'images invalides ;
+- le nombre d'images en attente ;
+- le nombre de labels ;
+- le nombre de caractéristiques ;
+- le nombre d'articles multimodaux.
 
-Cette séparation facilite l'ajout futur :
-
-- de labels humains ;
-- de vérités terrain ;
-- de pseudo-labels ;
-- de classifications automatiques.
-
-Le pipeline peut ainsi gérer plusieurs sources d'annotation sans modifier la structure principale des articles.
+Les collections produites sont enregistrées dans un fichier intermédiaire temporaire avant leur validation complète. :contentReference[oaicite:2]{index=2}
 
 ---
 
-## Génération des caractéristiques
+## Validation des données
 
-Le pipeline prépare également une structure destinée aux futures caractéristiques calculées.
+Avant de produire les fichiers définitifs, plusieurs contrôles sont réalisés.
 
-Ces informations pourront contenir par exemple :
+Le DAG vérifie notamment :
 
-- caractéristiques NLP ;
-- caractéristiques visuelles ;
-- embeddings ;
-- scores calculés ;
-- indicateurs multimodaux.
+- la présence de toutes les collections attendues ;
+- le type de chaque collection ;
+- la présence d'identifiants d'articles valides ;
+- l'absence de références orphelines entre les différentes collections.
 
-Cette architecture permet d'enrichir progressivement les articles sans modifier les autres tables.
+Ces contrôles permettent de détecter les incohérences avant toute tentative de chargement dans PostgreSQL.
 
 ---
 
-## Contrôles réalisés
+## Étape 3 : finalisation
 
-Avant la génération des fichiers, plusieurs vérifications sont effectuées.
+Une fois la transformation validée, la dernière tâche écrit les différents fichiers définitifs.
 
-Le DAG contrôle notamment :
+Chaque collection est enregistrée dans son propre fichier JSON.
 
-- la présence des identifiants ;
-- la cohérence des références entre les différentes structures ;
-- la présence des informations obligatoires ;
-- la conformité des types de données.
+Le document intermédiaire est ensuite supprimé afin de ne conserver que les fichiers nécessaires au reste du pipeline.
 
-Ces contrôles permettent de détecter les incohérences avant le chargement dans PostgreSQL.
+Cette étape génère également le rapport complet de transformation.
+
+---
+
+## Répertoire partagé
+
+Les fichiers sont enregistrés dans le dossier partagé du lot.
+
+```text
+/opt/airflow/shared/lots/
+
+└── <batch_id>/
+```
+
+Chaque lot possède ainsi son propre espace de travail.
+
+Cette organisation simplifie les échanges entre les DAGs sans utiliser les XCom pour transporter les données métier.
 
 ---
 
 ## Fichiers produits
 
-Le DAG génère les fichiers suivants.
+À la fin du DAG, cinq fichiers sont disponibles.
 
 ### Articles
 
-```
+```text
 02_articles_ready.json
 ```
 
@@ -192,7 +193,7 @@ Contient les données destinées à la table **articles**.
 
 ### Images
 
-```
+```text
 02_images_ready.json
 ```
 
@@ -202,17 +203,17 @@ Contient les données destinées à la table **images**.
 
 ### Labels
 
-```
+```text
 02_labels_ready.json
 ```
 
-Contient les informations destinées à la table **article_labels**.
+Contient les données destinées à la table **article_labels**.
 
 ---
 
 ### Features
 
-```
+```text
 02_features_ready.json
 ```
 
@@ -222,17 +223,29 @@ Contient les données destinées à la table **article_features**.
 
 ### Rapport
 
-```
+```text
 02_transformation_report.json
 ```
 
-Le rapport récapitule notamment :
+Ce rapport contient notamment :
 
-- le nombre d'articles transformés ;
-- le nombre d'images produites ;
+- le statut de la transformation ;
+- le nombre d'articles en entrée ;
+- le nombre d'articles produits ;
+- le nombre d'articles supprimés ;
+- le nombre d'éléments ignorés ;
+- le nombre d'images ;
+- le nombre d'images téléchargées ;
+- le nombre d'images valides ;
+- le nombre d'images invalides ;
+- le nombre d'images en attente ;
 - le nombre de labels ;
 - le nombre de caractéristiques ;
-- les chemins des fichiers générés.
+- le nombre d'articles multimodaux ;
+- les durées des différentes tâches ;
+- les chemins des fichiers produits.
+
+Il permet de suivre précisément le déroulement de la transformation.
 
 ---
 
@@ -243,31 +256,28 @@ Le DAG interrompt immédiatement son exécution lorsqu'une erreur critique est d
 Par exemple :
 
 - fichier d'entrée absent ;
-- structure JSON invalide ;
-- identifiants incohérents ;
-- données incompatibles avec le modèle relationnel.
+- document JSON invalide ;
+- structure incorrecte ;
+- aucune donnée exploitable ;
+- collection obligatoire manquante ;
+- identifiants d'articles absents ;
+- références orphelines entre les collections.
 
-Cette stratégie garantit que seules des données cohérentes pourront être chargées dans PostgreSQL.
+Cette stratégie garantit que seules des données cohérentes pourront être transmises au DAG de chargement.
 
 ---
 
-## Sorties
+## Communication entre les tâches
 
-Le DAG produit l'ensemble des fichiers nécessaires au chargement de la base de données.
+Les articles transformés ne transitent jamais dans les XCom.
 
-```
-02_articles_ready.json
+J'ai choisi de transmettre uniquement un manifeste contenant :
 
-02_images_ready.json
+- les chemins des fichiers ;
+- les principaux compteurs ;
+- les informations nécessaires à la tâche suivante.
 
-02_labels_ready.json
-
-02_features_ready.json
-
-02_transformation_report.json
-```
-
-Ces fichiers constituent les entrées du DAG de chargement.
+Cette approche limite fortement la quantité de données stockées par Airflow et améliore les performances du pipeline.
 
 ---
 
@@ -275,16 +285,20 @@ Ces fichiers constituent les entrées du DAG de chargement.
 
 Cette architecture présente plusieurs avantages.
 
-- Les données sont adaptées au modèle relationnel.
-- Les informations sont normalisées.
-- Les références entre tables sont préparées avant le chargement.
-- Les futures évolutions du modèle de données sont facilitées.
-- Les erreurs sont détectées avant toute insertion en base.
+- Les responsabilités sont clairement séparées.
+- Les données sont adaptées au modèle relationnel PostgreSQL.
+- Les contrôles de cohérence sont réalisés avant le chargement.
+- Les références entre les différentes collections sont validées.
+- Les statistiques de transformation sont produites automatiquement.
+- Les données volumineuses restent dans le stockage partagé.
+- Les fichiers intermédiaires sont supprimés une fois la transformation terminée.
 
 ---
 
 ## Résumé
 
-Le DAG de transformation assure la transition entre les données extraites et le modèle relationnel PostgreSQL.
+Le DAG **`checkit_transform`** assure la transition entre les données extraites et le modèle relationnel PostgreSQL.
 
-Il transforme un lot d'articles homogène en plusieurs structures spécialisées correspondant aux différentes tables de la base de données. Cette étape garantit la cohérence des données avant leur insertion et constitue le lien entre l'acquisition des données et leur stockage définitif.
+J'ai choisi de le découper en trois tâches spécialisées afin de distinguer la préparation du lot, la transformation des données et la finalisation des collections produites.
+
+À l'issue de cette étape, le pipeline dispose de plusieurs fichiers JSON directement compatibles avec les différentes tables PostgreSQL ainsi que d'un rapport détaillé qui servira au DAG de chargement.

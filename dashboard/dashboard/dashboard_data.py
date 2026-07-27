@@ -14,33 +14,20 @@ Toutes les données sont récupérées en lecture seule.
 
 from __future__ import annotations
 
-from html import escape
 from typing import Any
 
 import pandas as pd
 import streamlit as st
 
-from dashboard.services.dahsboard_postgres_service import (
-    count_articles,
-    get_article_details,
-    get_articles,
-    get_data_completeness,
-    get_data_completeness_by_source,
-    get_data_completeness_by_source_type,
-    get_image_completeness,
-    get_metadata_completeness,
-    get_database_overview,
-    get_daily_article_counts,
-    get_feature_distribution,
-    get_image_quality_summary,
-    get_label_distribution,
-    get_language_distribution,
-    get_quality_summary,
-    get_source_type_distribution,
-    get_sources_summary
+from dashboard.dashboard.dashboard_layout import (
+    apply_dashboard_layout,
+    render_information_rows,
+    render_layout_section_header,
+    render_layout_selection_help,
+    render_page_header,
+    render_result_summary
 )
-
-from dashboard.dashboard_ui_utils import (
+from dashboard.dashboard.dashboard_ui_utils import (
     format_boolean,
     format_datetime,
     format_number,
@@ -49,19 +36,33 @@ from dashboard.dashboard_ui_utils import (
     get_distinct_values,
     render_metric_cards,
     render_refresh_section,
-    render_section_header,
-    render_selection_help,
     rows_to_dataframe
 )
-
+from dashboard.services.dashboard_postgres_service import (
+    count_articles,
+    get_article_details,
+    get_articles,
+    get_daily_article_counts,
+    get_data_completeness,
+    get_data_completeness_by_source,
+    get_data_completeness_by_source_type,
+    get_database_overview,
+    get_feature_distribution,
+    get_image_completeness,
+    get_image_quality_summary,
+    get_label_distribution,
+    get_language_distribution,
+    get_metadata_completeness,
+    get_quality_summary,
+    get_source_type_distribution,
+    get_sources_summary
+)
 from src.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-# ============================================================================
 # Configuration
-# ============================================================================
 
 DEFAULT_ARTICLE_LIMIT = 50
 MAX_ARTICLE_LIMIT = 200
@@ -82,10 +83,62 @@ SORT_DIRECTION_LABELS = {
     "ASC": "Croissant"
 }
 
+COMPLETENESS_FIELDS = [
+    (
+        "Contenu",
+        "with_content",
+        "with_content_rate"
+    ),
+    (
+        "Date de publication",
+        "with_publication_date",
+        "with_publication_date_rate"
+    ),
+    (
+        "Auteur",
+        "with_author",
+        "with_author_rate"
+    ),
+    (
+        "URL",
+        "with_url",
+        "with_url_rate"
+    ),
+    (
+        "Langue",
+        "with_language",
+        "with_language_rate"
+    ),
+    (
+        "Image",
+        "with_image",
+        "with_image_rate"
+    ),
+    (
+        "Label",
+        "with_label",
+        "with_label_rate"
+    ),
+    (
+        "Features",
+        "with_feature",
+        "with_feature_rate"
+    )
+]
 
-# ============================================================================
+RATE_COLUMN_LABELS = {
+    "content_rate": "Contenu",
+    "publication_date_rate": "Publication",
+    "author_rate": "Auteur",
+    "url_rate": "URL",
+    "language_rate": "Langue",
+    "image_rate": "Images",
+    "label_rate": "Labels",
+    "feature_rate": "Features"
+}
+
+
 # Cache
-# ============================================================================
 
 @st.cache_data(ttl=30, show_spinner=False)
 def load_database_overview() -> dict[str, Any]:
@@ -145,7 +198,7 @@ def load_feature_distribution() -> list[dict[str, Any]]:
 
 @st.cache_data(ttl=60, show_spinner=False)
 def load_data_completeness() -> dict[str, Any]:
-    """Charge les indicateurs de complétude globale des articles."""
+    """Charge les indicateurs de complétude globale."""
 
     return get_data_completeness()
 
@@ -240,235 +293,33 @@ def load_article_details(
     return get_article_details(article_id)
 
 
-# ============================================================================
-# Style
-# ============================================================================
-
-def render_data_style() -> None:
-    """Applique le style visuel de la page Données."""
-
-    st.markdown(
-        """
-        <style>
-            .checkit-data-header {
-                padding: 1.35rem 1.5rem;
-                margin-bottom: 1.25rem;
-                border: 1px solid rgba(128, 132, 149, 0.18);
-                border-radius: 1.1rem;
-                background:
-                    radial-gradient(
-                        circle at top right,
-                        rgba(15, 157, 132, 0.17),
-                        transparent 38%
-                    ),
-                    rgba(128, 132, 149, 0.045);
-            }
-
-            .checkit-data-eyebrow {
-                margin-bottom: 0.45rem;
-                color: #8d91a4;
-                font-size: 0.72rem;
-                font-weight: 700;
-                letter-spacing: 0.11em;
-                text-transform: uppercase;
-            }
-
-            .checkit-data-title {
-                margin: 0;
-                font-size: 2rem;
-                font-weight: 780;
-                line-height: 1.15;
-            }
-
-            .checkit-data-description {
-                max-width: 54rem;
-                margin-top: 0.55rem;
-                color: #9397a8;
-                font-size: 0.92rem;
-                line-height: 1.5;
-            }
-
-            .checkit-section-header {
-                display: flex;
-                align-items: center;
-                gap: 0.65rem;
-                margin: 1.1rem 0 0.85rem;
-            }
-
-            .checkit-section-icon {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 2rem;
-                height: 2rem;
-                flex: 0 0 2rem;
-                border-radius: 0.65rem;
-                font-size: 0.92rem;
-                background: rgba(15, 157, 132, 0.13);
-            }
-
-            .checkit-section-title {
-                margin: 0;
-                font-size: 1.05rem;
-                font-weight: 720;
-                line-height: 1.2;
-            }
-
-            .checkit-section-description {
-                margin-top: 0.15rem;
-                color: #8d91a4;
-                font-size: 0.76rem;
-                line-height: 1.35;
-            }
-
-            .checkit-selection-help {
-                padding: 0.8rem 1rem;
-                margin-top: 0.75rem;
-                border: 1px dashed rgba(128, 132, 149, 0.25);
-                border-radius: 0.75rem;
-                color: #8d91a4;
-                font-size: 0.78rem;
-                text-align: center;
-            }
-
-            .checkit-result-summary {
-                padding: 0.7rem 0.9rem;
-                margin: 0.75rem 0;
-                border-left: 3px solid rgba(15, 157, 132, 0.75);
-                border-radius: 0 0.65rem 0.65rem 0;
-                background: rgba(15, 157, 132, 0.07);
-                color: #989cac;
-                font-size: 0.78rem;
-            }
-
-            .checkit-article-title {
-                margin: 0 0 0.9rem;
-                font-size: 1.35rem;
-                font-weight: 740;
-                line-height: 1.35;
-            }
-
-            .checkit-metadata-list {
-                display: grid;
-                gap: 0.55rem;
-            }
-
-            .checkit-metadata-row {
-                padding-bottom: 0.5rem;
-                border-bottom: 1px solid rgba(128, 132, 149, 0.12);
-            }
-
-            .checkit-metadata-label {
-                color: #8d91a4;
-                font-size: 0.69rem;
-                font-weight: 700;
-                letter-spacing: 0.05em;
-                text-transform: uppercase;
-            }
-
-            .checkit-metadata-value {
-                margin-top: 0.18rem;
-                font-size: 0.84rem;
-                line-height: 1.35;
-                word-break: break-word;
-            }
-
-            .checkit-footer-note {
-                margin-top: 0.6rem;
-                color: #85899b;
-                font-size: 0.72rem;
-                text-align: center;
-            }
-
-            div[data-testid="stMetric"] {
-                padding: 0.15rem 0;
-            }
-
-            div[data-testid="stMetricLabel"] {
-                color: #9296a8;
-                font-size: 0.78rem;
-            }
-
-            div[data-testid="stMetricValue"] {
-                font-size: 1.35rem;
-                font-weight: 750;
-            }
-
-            div[data-testid="stVerticalBlockBorderWrapper"] {
-                border-color: rgba(128, 132, 149, 0.18);
-                border-radius: 0.9rem;
-                background: rgba(128, 132, 149, 0.035);
-            }
-
-            button[data-baseweb="tab"] {
-                height: 3rem;
-                padding-left: 1rem;
-                padding-right: 1rem;
-                font-weight: 650;
-            }
-
-            [data-testid="stDataFrame"] {
-                border: 1px solid rgba(128, 132, 149, 0.16);
-                border-radius: 0.8rem;
-                overflow: hidden;
-            }
-
-            div[data-testid="stSelectbox"] label,
-            div[data-testid="stTextInput"] label,
-            div[data-testid="stNumberInput"] label,
-            div[data-testid="stSlider"] label {
-                color: #8d91a4;
-                font-size: 0.77rem;
-                font-weight: 600;
-            }
-
-            div[data-testid="stButton"] button,
-            div[data-testid="stFormSubmitButton"] button,
-            div[data-testid="stLinkButton"] a {
-                min-height: 2.6rem;
-                border-radius: 0.75rem;
-                font-weight: 650;
-            }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-
-# ============================================================================
 # En-tête
-# ============================================================================
 
 def render_header() -> None:
-    """Affiche le titre et la description de la page."""
+    """Affiche l'en-tête de la page Données."""
 
-    st.markdown(
-        '<div class="checkit-data-header">'
-        '<div class="checkit-data-eyebrow">'
-        'Observatoire des données'
-        '</div>'
-        '<div class="checkit-data-title">'
-        '🗄️ Données CheckIt.AI'
-        '</div>'
-        '<div class="checkit-data-description">'
-        'Exploration des articles, images, labels, features et sources '
-        'stockés dans PostgreSQL, avec suivi de leur qualité et de leur '
-        'complétude.'
-        '</div>'
-        '</div>',
-        unsafe_allow_html=True
+    render_page_header(
+        eyebrow="Observatoire des données",
+        title="🗄️ Données CheckIt.AI",
+        description=(
+            "Exploration des articles, images, labels, features et sources "
+            "stockés dans PostgreSQL, avec suivi de leur qualité et de leur "
+            "complétude."
+        ),
+        badges=[
+            "Lecture seule",
+            "PostgreSQL",
+            "Qualité des données"
+        ]
     )
 
 
-# ============================================================================
 # Vue d'ensemble
-# ============================================================================
 
 def render_overview_section() -> None:
     """Affiche les principaux indicateurs de la base."""
 
-    render_section_header(
+    render_layout_section_header(
         "📊",
         "Vue d'ensemble",
         "Volumes stockés et couverture des enrichissements associés."
@@ -476,7 +327,6 @@ def render_overview_section() -> None:
 
     try:
         overview = load_database_overview()
-
     except Exception as error:
         logger.warning(
             "Impossible de charger la vue d'ensemble PostgreSQL : %s",
@@ -493,9 +343,18 @@ def render_overview_section() -> None:
         return
 
     render_metric_cards([
-        ("📰 Articles", format_number(overview.get("articles"))),
-        ("🖼️ Images", format_number(overview.get("images"))),
-        ("🏷️ Labels", format_number(overview.get("article_labels"))),
+        (
+            "📰 Articles",
+            format_number(overview.get("articles"))
+        ),
+        (
+            "🖼️ Images",
+            format_number(overview.get("images"))
+        ),
+        (
+            "🏷️ Labels",
+            format_number(overview.get("article_labels"))
+        ),
         (
             "🧩 Features",
             format_number(overview.get("article_features"))
@@ -503,7 +362,10 @@ def render_overview_section() -> None:
     ])
 
     render_metric_cards([
-        ("🌐 Sources", format_number(overview.get("sources"))),
+        (
+            "🌐 Sources",
+            format_number(overview.get("sources"))
+        ),
         (
             "Couverture images",
             format_percentage(overview.get("image_coverage"))
@@ -519,14 +381,12 @@ def render_overview_section() -> None:
     ])
 
 
-# ============================================================================
 # Sources
-# ============================================================================
 
 def render_sources_section() -> None:
     """Affiche les statistiques liées aux sources."""
 
-    render_section_header(
+    render_layout_section_header(
         "🌐",
         "Sources",
         "Volumes collectés et répartition par famille de source."
@@ -535,7 +395,6 @@ def render_sources_section() -> None:
     try:
         sources = load_sources_summary()
         source_types = load_source_type_distribution()
-
     except Exception as error:
         logger.warning(
             "Impossible de charger les statistiques des sources : %s",
@@ -608,7 +467,7 @@ def render_sources_table(
 def render_source_type_chart(
     rows: list[dict[str, Any]]
 ) -> None:
-    """Affiche la répartition des articles par type de source."""
+    """Affiche la répartition par type de source."""
 
     dataframe = rows_to_dataframe(rows)
 
@@ -622,7 +481,9 @@ def render_source_type_chart(
     }
 
     if not required_columns.issubset(dataframe.columns):
-        st.info("La répartition des sources est incomplète.")
+        st.info(
+            "La répartition des sources est incomplète."
+        )
         return
 
     chart_data = dataframe.set_index(
@@ -635,14 +496,12 @@ def render_source_type_chart(
     )
 
 
-# ============================================================================
 # Répartitions
-# ============================================================================
 
 def render_distributions_section() -> None:
     """Affiche les principales répartitions métier."""
 
-    render_section_header(
+    render_layout_section_header(
         "🧭",
         "Répartitions",
         "Lecture des données selon leur langue, label et statut qualité."
@@ -673,7 +532,6 @@ def render_language_distribution() -> None:
 
     try:
         rows = load_language_distribution()
-
     except Exception as error:
         st.error(
             "La répartition des langues n'est pas disponible."
@@ -720,7 +578,6 @@ def render_label_distribution() -> None:
 
     try:
         rows = load_label_distribution()
-
     except Exception as error:
         st.error(
             "La répartition des labels n'est pas disponible."
@@ -769,7 +626,6 @@ def render_quality_distribution() -> None:
 
     try:
         rows = load_quality_summary()
-
     except Exception as error:
         st.error(
             "Les statistiques de qualité ne sont pas disponibles."
@@ -798,7 +654,7 @@ def render_quality_distribution() -> None:
             ]].rename(columns={
                 "article_count": "Articles"
             }),
-             width="stretch",
+            width="stretch",
             hide_index=True
         )
 
@@ -808,7 +664,6 @@ def render_image_distribution() -> None:
 
     try:
         rows = load_image_quality_summary()
-
     except Exception as error:
         st.error(
             "Les statistiques des images ne sont pas disponibles."
@@ -842,37 +697,12 @@ def render_image_distribution() -> None:
             ]].rename(columns={
                 "image_count": "Images"
             }),
-             width="stretch",
+            width="stretch",
             hide_index=True
         )
 
 
-# ============================================================================
 # Complétude
-# ============================================================================
-
-COMPLETENESS_FIELDS = [
-    ("Contenu", "with_content", "with_content_rate"),
-    ("Date de publication", "with_publication_date", "with_publication_date_rate"),
-    ("Auteur", "with_author", "with_author_rate"),
-    ("URL", "with_url", "with_url_rate"),
-    ("Langue", "with_language", "with_language_rate"),
-    ("Image", "with_image", "with_image_rate"),
-    ("Label", "with_label", "with_label_rate"),
-    ("Features", "with_feature", "with_feature_rate")
-]
-
-RATE_COLUMN_LABELS = {
-    "content_rate": "Contenu",
-    "publication_date_rate": "Publication",
-    "author_rate": "Auteur",
-    "url_rate": "URL",
-    "language_rate": "Langue",
-    "image_rate": "Images",
-    "label_rate": "Labels",
-    "feature_rate": "Features"
-}
-
 
 def build_completeness_dataframe(
     completeness: dict[str, Any]
@@ -884,30 +714,22 @@ def build_completeness_dataframe(
     for label, count_field, rate_field in COMPLETENESS_FIELDS:
         rows.append({
             "Champ": label,
-            "Articles renseignés": int(completeness.get(count_field) or 0),
-            "Taux de complétude": float(completeness.get(rate_field) or 0)
+            "Articles renseignés": int(
+                completeness.get(count_field) or 0
+            ),
+            "Taux de complétude": float(
+                completeness.get(rate_field) or 0
+            )
         })
 
     return pd.DataFrame(rows)
-
-
-def format_rate_columns(dataframe: pd.DataFrame) -> pd.DataFrame:
-    """Formate les colonnes représentant des taux de complétude."""
-
-    formatted = dataframe.copy()
-
-    for column in formatted.columns:
-        if column in RATE_COLUMN_LABELS.values() or column.endswith(" (%)"):
-            formatted[column] = formatted[column].map(format_percentage)
-
-    return formatted
 
 
 def prepare_grouped_completeness_dataframe(
     rows: list[dict[str, Any]],
     group_columns: dict[str, str]
 ) -> pd.DataFrame:
-    """Prépare un tableau de complétude par source ou type de source."""
+    """Prépare un tableau de complétude par groupe."""
 
     dataframe = rows_to_dataframe(rows)
 
@@ -926,19 +748,27 @@ def prepare_grouped_completeness_dataframe(
         if column in dataframe.columns
     ]
 
-    dataframe = dataframe[visible_columns].rename(columns=rename_columns)
+    dataframe = dataframe[visible_columns].rename(
+        columns=rename_columns
+    )
 
     for column in RATE_COLUMN_LABELS.values():
         if column in dataframe.columns:
-            dataframe[column] = dataframe[column].map(format_percentage)
+            dataframe[column] = dataframe[column].map(
+                format_percentage
+            )
 
     if "Articles" in dataframe.columns:
-        dataframe["Articles"] = dataframe["Articles"].map(format_number)
+        dataframe["Articles"] = dataframe["Articles"].map(
+            format_number
+        )
 
     return dataframe
 
 
-def render_global_completeness(completeness: dict[str, Any]) -> None:
+def render_global_completeness(
+    completeness: dict[str, Any]
+) -> None:
     """Affiche la complétude globale des articles."""
 
     dataframe = build_completeness_dataframe(completeness)
@@ -947,19 +777,34 @@ def render_global_completeness(completeness: dict[str, Any]) -> None:
     with chart_column:
         with st.container(border=True):
             st.markdown("#### Vue synthétique")
-            chart_data = dataframe.set_index("Champ")[["Taux de complétude"]]
-            st.bar_chart(chart_data, width="stretch")
+
+            chart_data = dataframe.set_index(
+                "Champ"
+            )[["Taux de complétude"]]
+
+            st.bar_chart(
+                chart_data,
+                width="stretch"
+            )
 
     with table_column:
         with st.container(border=True):
             st.markdown("#### Détail global")
+
             display_dataframe = dataframe.copy()
+
             display_dataframe["Articles renseignés"] = (
-                display_dataframe["Articles renseignés"].map(format_number)
+                display_dataframe["Articles renseignés"].map(
+                    format_number
+                )
             )
+
             display_dataframe["Taux de complétude"] = (
-                display_dataframe["Taux de complétude"].map(format_percentage)
+                display_dataframe["Taux de complétude"].map(
+                    format_percentage
+                )
             )
+
             st.dataframe(
                 display_dataframe,
                 width="stretch",
@@ -968,14 +813,18 @@ def render_global_completeness(completeness: dict[str, Any]) -> None:
 
 
 def render_completeness_by_source_type() -> None:
-    """Affiche la complétude agrégée par famille de source."""
+    """Affiche la complétude par famille de source."""
 
     try:
         rows = load_data_completeness_by_source_type()
     except Exception as error:
-        st.error("La complétude par type de source n'est pas disponible.")
+        st.error(
+            "La complétude par type de source n'est pas disponible."
+        )
+
         with st.expander("Détail technique"):
             st.code(str(error))
+
         return
 
     dataframe = prepare_grouped_completeness_dataframe(
@@ -984,16 +833,24 @@ def render_completeness_by_source_type() -> None:
     )
 
     if dataframe.empty:
-        st.info("Aucune statistique par type de source n'est disponible.")
+        st.info(
+            "Aucune statistique par type de source n'est disponible."
+        )
         return
 
     with st.container(border=True):
         st.markdown("#### Lecture métier par famille")
+
         st.caption(
             "Cette vue distingue les datasets, APIs, flux RSS, réseaux "
             "sociaux et scrapers afin d'éviter les comparaisons trompeuses."
         )
-        st.dataframe(dataframe, width="stretch", hide_index=True)
+
+        st.dataframe(
+            dataframe,
+            width="stretch",
+            hide_index=True
+        )
 
 
 def render_completeness_by_source() -> None:
@@ -1002,9 +859,13 @@ def render_completeness_by_source() -> None:
     try:
         rows = load_data_completeness_by_source()
     except Exception as error:
-        st.error("La complétude par source n'est pas disponible.")
+        st.error(
+            "La complétude par source n'est pas disponible."
+        )
+
         with st.expander("Détail technique"):
             st.code(str(error))
+
         return
 
     dataframe = prepare_grouped_completeness_dataframe(
@@ -1017,16 +878,26 @@ def render_completeness_by_source() -> None:
     )
 
     if dataframe.empty:
-        st.info("Aucune statistique de complétude par source n'est disponible.")
+        st.info(
+            "Aucune statistique de complétude par source "
+            "n'est disponible."
+        )
         return
 
     with st.container(border=True):
         st.markdown("#### Diagnostic par extracteur")
+
         st.caption(
-            "Les faibles taux deviennent actionnables lorsqu'ils sont reliés "
-            "à une source précise."
+            "Les faibles taux deviennent actionnables lorsqu'ils sont "
+            "reliés à une source précise."
         )
-        st.dataframe(dataframe, width="stretch", hide_index=True, height=460)
+
+        st.dataframe(
+            dataframe,
+            width="stretch",
+            hide_index=True,
+            height=460
+        )
 
 
 def render_specialized_completeness(
@@ -1041,38 +912,56 @@ def render_specialized_completeness(
         st.info(empty_message)
         return
 
-    rows = []
-
-    for label, count_field, rate_field in fields:
-        rows.append({
+    rows = [
+        {
             "Champ": label,
-            "Valeurs renseignées": int(completeness.get(count_field) or 0),
-            "Taux de complétude": float(completeness.get(rate_field) or 0)
-        })
+            "Valeurs renseignées": int(
+                completeness.get(count_field) or 0
+            ),
+            "Taux de complétude": float(
+                completeness.get(rate_field) or 0
+            )
+        }
+        for label, count_field, rate_field in fields
+    ]
 
     dataframe = pd.DataFrame(rows)
 
+    dataframe["Valeurs renseignées"] = (
+        dataframe["Valeurs renseignées"].map(
+            format_number
+        )
+    )
+
+    dataframe["Taux de complétude"] = (
+        dataframe["Taux de complétude"].map(
+            format_percentage
+        )
+    )
+
     with st.container(border=True):
         st.markdown(f"#### {title}")
-        display_dataframe = dataframe.copy()
-        display_dataframe["Valeurs renseignées"] = (
-            display_dataframe["Valeurs renseignées"].map(format_number)
+
+        st.dataframe(
+            dataframe,
+            width="stretch",
+            hide_index=True
         )
-        display_dataframe["Taux de complétude"] = (
-            display_dataframe["Taux de complétude"].map(format_percentage)
-        )
-        st.dataframe(display_dataframe, width="stretch", hide_index=True)
 
 
 def render_image_completeness() -> None:
-    """Affiche la complétude technique des images enregistrées."""
+    """Affiche la complétude technique des images."""
 
     try:
         completeness = load_image_completeness()
     except Exception as error:
-        st.error("La complétude technique des images n'est pas disponible.")
+        st.error(
+            "La complétude technique des images n'est pas disponible."
+        )
+
         with st.expander("Détail technique"):
             st.code(str(error))
+
         return
 
     fields = [
@@ -1086,10 +975,22 @@ def render_image_completeness() -> None:
         ("Hauteur", "with_height", "with_height_rate"),
         ("Taille", "with_size_bytes", "with_size_bytes_rate"),
         ("Hash fichier", "with_file_hash", "with_file_hash_rate"),
-        ("Hash perceptuel", "with_perceptual_hash", "with_perceptual_hash_rate"),
-        ("Durée téléchargement", "with_download_duration", "with_download_duration_rate"),
+        (
+            "Hash perceptuel",
+            "with_perceptual_hash",
+            "with_perceptual_hash_rate"
+        ),
+        (
+            "Durée téléchargement",
+            "with_download_duration",
+            "with_download_duration_rate"
+        ),
         ("Score de flou", "with_blur_score", "with_blur_score_rate"),
-        ("Luminosité", "with_brightness_score", "with_brightness_score_rate"),
+        (
+            "Luminosité",
+            "with_brightness_score",
+            "with_brightness_score_rate"
+        ),
         ("Entropie", "with_entropy_score", "with_entropy_score_rate")
     ]
 
@@ -1107,9 +1008,13 @@ def render_metadata_completeness() -> None:
     try:
         completeness = load_metadata_completeness()
     except Exception as error:
-        st.error("La complétude des métadonnées n'est pas disponible.")
+        st.error(
+            "La complétude des métadonnées n'est pas disponible."
+        )
+
         with st.expander("Détail technique"):
             st.code(str(error))
+
         return
 
     fields = [
@@ -1117,26 +1022,35 @@ def render_metadata_completeness() -> None:
         ("Titre", "with_title", "with_title_rate"),
         ("Contenu", "with_content", "with_content_rate"),
         ("Auteur", "with_author", "with_author_rate"),
-        ("Date de publication", "with_publication_date", "with_publication_date_rate"),
+        (
+            "Date de publication",
+            "with_publication_date",
+            "with_publication_date_rate"
+        ),
         ("URL", "with_url", "with_url_rate"),
         ("Langue", "with_language", "with_language_rate"),
         ("Catégorie", "with_category", "with_category_rate"),
         ("Rôle", "with_role", "with_role_rate"),
-        ("Statut qualité", "with_quality_status", "with_quality_status_rate")
+        (
+            "Statut qualité",
+            "with_quality_status",
+            "with_quality_status_rate"
+        )
     ]
 
     render_specialized_completeness(
         completeness,
         fields,
         "Métadonnées éditoriales",
-        "Aucune statistique de complétude des métadonnées n'est disponible."
+        "Aucune statistique de complétude des métadonnées "
+        "n'est disponible."
     )
 
 
 def render_completeness_section() -> None:
-    """Affiche les différents niveaux de complétude des données."""
+    """Affiche les différents niveaux de complétude."""
 
-    render_section_header(
+    render_layout_section_header(
         "🧩",
         "Complétude des données",
         "Analyse globale, par famille, par source et par domaine technique."
@@ -1149,7 +1063,10 @@ def render_completeness_section() -> None:
             "Impossible de charger la complétude globale : %s",
             error
         )
-        st.error("Les indicateurs de complétude ne sont pas disponibles.")
+
+        st.error(
+            "Les indicateurs de complétude ne sont pas disponibles."
+        )
         return
 
     if not completeness:
@@ -1180,14 +1097,12 @@ def render_completeness_section() -> None:
         render_metadata_completeness()
 
 
-# ============================================================================
 # Historique
-# ============================================================================
 
 def render_history_section() -> None:
     """Affiche l'évolution du nombre d'articles extraits."""
 
-    render_section_header(
+    render_layout_section_header(
         "📈",
         "Historique des extractions",
         "Évolution quotidienne du volume d'articles collectés."
@@ -1206,7 +1121,6 @@ def render_history_section() -> None:
 
     try:
         rows = load_daily_article_counts(days)
-
     except Exception as error:
         st.error(
             "L'historique des extractions n'est pas disponible."
@@ -1236,7 +1150,7 @@ def render_history_section() -> None:
     with st.container(border=True):
         st.line_chart(
             chart_data,
-             width="stretch"
+            width="stretch"
         )
 
     total_articles = int(
@@ -1247,26 +1161,27 @@ def render_history_section() -> None:
         dataframe["article_count"].mean()
     )
 
-    render_metric_cards([
-        (
-            "Articles sur la période",
-            format_number(total_articles)
-        ),
-        (
-            "Moyenne par jour actif",
-            f"{average_articles:.1f}"
-        )
-    ], columns_count=2)
+    render_metric_cards(
+        [
+            (
+                "Articles sur la période",
+                format_number(total_articles)
+            ),
+            (
+                "Moyenne par jour actif",
+                f"{average_articles:.1f}"
+            )
+        ],
+        columns_count=2
+    )
 
 
-# ============================================================================
 # Features
-# ============================================================================
 
 def render_features_section() -> None:
     """Affiche la répartition des features générées."""
 
-    render_section_header(
+    render_layout_section_header(
         "🧮",
         "Features",
         "Caractéristiques techniques produites pour les articles."
@@ -1274,7 +1189,6 @@ def render_features_section() -> None:
 
     try:
         rows = load_feature_distribution()
-
     except Exception as error:
         st.error(
             "La répartition des features n'est pas disponible."
@@ -1309,19 +1223,17 @@ def render_features_section() -> None:
             dataframe[visible_columns].rename(
                 columns=rename_columns
             ),
-             width="stretch",
+            width="stretch",
             hide_index=True
         )
 
 
-# ============================================================================
 # Explorateur d'articles
-# ============================================================================
 
 def render_articles_section() -> None:
     """Affiche les filtres et la liste des articles."""
 
-    render_section_header(
+    render_layout_section_header(
         "📰",
         "Explorateur d'articles",
         "Recherche multicritère et consultation détaillée du corpus."
@@ -1332,7 +1244,6 @@ def render_articles_section() -> None:
         languages = load_language_distribution()
         labels = load_label_distribution()
         qualities = load_quality_summary()
-
     except Exception as error:
         st.error(
             "Les filtres de consultation ne sont pas disponibles."
@@ -1447,7 +1358,12 @@ def render_article_filters(
             with second_row[2]:
                 limit = st.selectbox(
                     "Articles par page",
-                    options=[25, 50, 100, MAX_ARTICLE_LIMIT],
+                    options=[
+                        25,
+                        DEFAULT_ARTICLE_LIMIT,
+                        100,
+                        MAX_ARTICLE_LIMIT
+                    ],
                     index=1,
                     key="article_limit"
                 )
@@ -1527,7 +1443,6 @@ def render_article_results(
             language=filters["language"],
             quality_status=filters["quality_status"]
         )
-
     except Exception as error:
         logger.warning(
             "Impossible de charger les articles : %s",
@@ -1556,17 +1471,14 @@ def render_article_results(
         ) // filters["limit"]
     )
 
-    st.markdown(
-        '<div class="checkit-result-summary">'
+    render_result_summary(
         f"{format_number(total_articles)} article(s) trouvé(s) · "
         f"page {filters['page']} sur {page_count}"
-        '</div>',
-        unsafe_allow_html=True
     )
 
     event = st.dataframe(
         prepare_articles_dataframe(articles),
-         width="stretch",
+        width="stretch",
         hide_index=True,
         on_select="rerun",
         selection_mode="single-row",
@@ -1576,7 +1488,7 @@ def render_article_results(
     selected_rows = event.selection.rows
 
     if not selected_rows:
-        render_selection_help(
+        render_layout_selection_help(
             "Sélectionne un article dans le tableau pour afficher "
             "son contenu, ses métadonnées et ses données associées."
         )
@@ -1638,16 +1550,15 @@ def prepare_articles_dataframe(
     return dataframe
 
 
-# ============================================================================
 # Détail d'un article
-# ============================================================================
 
-def render_article_details(article_id: str) -> None:
+def render_article_details(
+    article_id: str
+) -> None:
     """Affiche le détail complet d'un article."""
 
     try:
         article = load_article_details(article_id)
-
     except Exception as error:
         st.error(
             "Le détail de l'article n'est pas disponible."
@@ -1664,19 +1575,15 @@ def render_article_details(article_id: str) -> None:
 
     st.divider()
 
-    render_section_header(
+    render_layout_section_header(
         "🔍",
         "Détail de l'article",
-        "Contenu, métadonnées et enrichissements de l'article sélectionné."
+        "Contenu, métadonnées et enrichissements "
+        "de l'article sélectionné."
     )
 
-    title = escape(
+    st.subheader(
         str(article.get("title") or "Article sans titre")
-    )
-
-    st.markdown(
-        f'<div class="checkit-article-title">{title}</div>',
-        unsafe_allow_html=True
     )
 
     content_column, metadata_column = st.columns([2, 1])
@@ -1731,52 +1638,53 @@ def render_article_metadata(
 
     st.markdown("#### Métadonnées")
 
-    metadata = {
-        "Source": (
+    metadata = [
+        (
+            "Source",
             article.get("source_name")
             or article.get("source_key")
         ),
-        "Type": article.get("source_type"),
-        "Auteur": article.get("author"),
-        "Langue": article.get("language"),
-        "Catégorie": article.get("category"),
-        "Rôle": article.get("dataset_role"),
-        "Qualité": article.get("data_quality_status"),
-        "Publication": format_datetime(article.get("published_at")),
-        "Extraction": format_datetime(article.get("extracted_at"))
-    }
-
-    rendered_rows = []
-
-    for label, value in metadata.items():
-        if value in {None, ""}:
-            continue
-
-        displayed_value = (
-            format_status(value)
-            if label == "Qualité"
-            else escape(str(value))
+        (
+            "Type",
+            article.get("source_type")
+        ),
+        (
+            "Auteur",
+            article.get("author")
+        ),
+        (
+            "Langue",
+            article.get("language")
+        ),
+        (
+            "Catégorie",
+            article.get("category")
+        ),
+        (
+            "Rôle",
+            article.get("dataset_role")
+        ),
+        (
+            "Qualité",
+            format_status(
+                article.get("data_quality_status")
+            )
+        ),
+        (
+            "Publication",
+            format_datetime(
+                article.get("published_at")
+            )
+        ),
+        (
+            "Extraction",
+            format_datetime(
+                article.get("extracted_at")
+            )
         )
+    ]
 
-        rendered_rows.append(
-            '<div class="checkit-metadata-row">'
-            f'<div class="checkit-metadata-label">{label}</div>'
-            '<div class="checkit-metadata-value">'
-            f"{displayed_value}"
-            '</div>'
-            '</div>'
-        )
-
-    if not rendered_rows:
-        st.caption("Aucune métadonnée disponible.")
-        return
-
-    st.markdown(
-        '<div class="checkit-metadata-list">'
-        f"{''.join(rendered_rows)}"
-        '</div>',
-        unsafe_allow_html=True
-    )
+    render_information_rows(metadata)
 
 
 def render_article_related_data(
@@ -1831,14 +1739,12 @@ def render_related_table(
     with st.container(border=True):
         st.dataframe(
             dataframe,
-             width="stretch",
+            width="stretch",
             hide_index=True
         )
 
 
-# ============================================================================
 # Actualisation
-# ============================================================================
 
 def clear_data_cache() -> None:
     """Supprime le cache utilisé par la page."""
@@ -1862,14 +1768,12 @@ def clear_data_cache() -> None:
     load_article_details.clear()
 
 
-# ============================================================================
-# Page complète
-# ============================================================================
+# Page
 
 def render_data_page() -> None:
     """Affiche la page de consultation des données."""
 
-    render_data_style()
+    apply_dashboard_layout(accent="teal")
     render_header()
 
     overview_tab, quality_tab, articles_tab = st.tabs([

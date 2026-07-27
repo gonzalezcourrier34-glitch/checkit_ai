@@ -24,9 +24,7 @@ import pandas as pd
 import streamlit as st
 
 
-# ============================================================================
-# Configuration des DAGs
-# ============================================================================
+# Constantes
 
 DAG_LABELS = {
     "checkit_master_pipeline": "Pipeline complet",
@@ -38,11 +36,6 @@ DAG_LABELS = {
     "checkit_database_setup": "Initialisation PostgreSQL",
     "test_checkit_postgres": "Test PostgreSQL"
 }
-
-
-# ============================================================================
-# Configuration des statuts
-# ============================================================================
 
 STATUS_LABELS = {
     "success": "🟢 Succès",
@@ -75,9 +68,7 @@ STATUS_LABELS = {
 }
 
 
-# ============================================================================
 # Formatage
-# ============================================================================
 
 def format_number(
     value: Any,
@@ -87,7 +78,6 @@ def format_number(
 
     try:
         return f"{int(value):,}".replace(",", " ")
-
     except (TypeError, ValueError, OverflowError):
         return default
 
@@ -99,11 +89,9 @@ def format_decimal(
 ) -> str:
     """Formate une valeur décimale avec un nombre fixe de décimales."""
 
-    safe_decimals = max(0, int(decimals))
-
     try:
+        safe_decimals = max(0, int(decimals))
         return f"{float(value):.{safe_decimals}f}"
-
     except (TypeError, ValueError, OverflowError):
         return default
 
@@ -118,7 +106,6 @@ def format_percentage(
     try:
         safe_decimals = max(0, int(decimals))
         return f"{float(value):.{safe_decimals}f} %"
-
     except (TypeError, ValueError, OverflowError):
         return default
 
@@ -139,22 +126,18 @@ def format_status(
 ) -> str:
     """Retourne un statut accompagné d'un indicateur visuel."""
 
-    normalized_status = str(
-        status or "unknown"
-    ).strip().lower()
+    normalized_status = str(status or "unknown").strip().lower()
 
     available_labels = {
         **STATUS_LABELS,
         **dict(labels or {})
     }
 
-    return available_labels.get(
-        normalized_status,
-        (
-            "⚪ "
-            f"{normalized_status.replace('_', ' ').capitalize()}"
-        )
+    default_label = (
+        f"⚪ {normalized_status.replace('_', ' ').capitalize()}"
     )
+
+    return available_labels.get(normalized_status, default_label)
 
 
 def format_dag_name(
@@ -169,10 +152,8 @@ def format_dag_name(
     if not normalized_dag_id:
         return "DAG inconnu"
 
-    label = DAG_LABELS.get(
-        normalized_dag_id,
-        normalized_dag_id.replace("_", " ").capitalize()
-    )
+    default_label = normalized_dag_id.replace("_", " ").capitalize()
+    label = DAG_LABELS.get(normalized_dag_id, default_label)
 
     if include_id:
         return f"{label} · {normalized_dag_id}"
@@ -197,7 +178,6 @@ def format_datetime(
             return default
 
         return date.strftime(date_format)
-
     except (TypeError, ValueError, OverflowError):
         return str(value)
 
@@ -210,7 +190,6 @@ def format_duration(
 
     try:
         total_seconds = max(0, int(float(value)))
-
     except (TypeError, ValueError, OverflowError):
         return default
 
@@ -229,14 +208,15 @@ def format_duration(
     if minutes or hours or days:
         parts.append(f"{minutes:02d} min")
 
-    parts.append(f"{seconds:02d} s" if parts else f"{seconds} s")
+    if parts:
+        parts.append(f"{seconds:02d} s")
+    else:
+        parts.append(f"{seconds} s")
 
     return " ".join(parts)
 
 
-# ============================================================================
 # Données
-# ============================================================================
 
 def rows_to_dataframe(
     rows: Sequence[Mapping[str, Any]] | None
@@ -246,10 +226,7 @@ def rows_to_dataframe(
     if not rows:
         return pd.DataFrame()
 
-    return pd.DataFrame([
-        dict(row)
-        for row in rows
-    ])
+    return pd.DataFrame([dict(row) for row in rows])
 
 
 def get_distinct_values(
@@ -261,17 +238,17 @@ def get_distinct_values(
     if not rows or not field:
         return []
 
-    return sorted({
+    values = {
         str(row[field]).strip()
         for row in rows
         if row.get(field) not in {None, ""}
         and str(row[field]).strip()
-    })
+    }
+
+    return sorted(values)
 
 
-# ============================================================================
 # Composants visuels
-# ============================================================================
 
 def render_section_header(
     icon: str,
@@ -291,9 +268,9 @@ def render_section_header(
         f'<div class="checkit-section-title">{safe_title}</div>'
         '<div class="checkit-section-description">'
         f"{safe_description}"
-        '</div>'
-        '</div>'
-        '</div>',
+        "</div>"
+        "</div>"
+        "</div>",
         unsafe_allow_html=True
     )
 
@@ -309,13 +286,15 @@ def render_metric_cards(
 
     safe_columns_count = max(
         1,
-        min(int(columns_count), len(metrics))
+        min(len(metrics), int(columns_count))
     )
 
     columns = st.columns(safe_columns_count)
 
     for index, (label, value) in enumerate(metrics):
-        with columns[index % safe_columns_count]:
+        column = columns[index % safe_columns_count]
+
+        with column:
             with st.container(border=True):
                 st.metric(
                     label=str(label),
@@ -326,10 +305,12 @@ def render_metric_cards(
 def render_selection_help(message: str) -> None:
     """Affiche une aide discrète sous un tableau sélectionnable."""
 
+    safe_message = escape(str(message or ""))
+
     st.markdown(
         '<div class="checkit-selection-help">'
-        f"{escape(str(message or ''))}"
-        '</div>',
+        f"{safe_message}"
+        "</div>",
         unsafe_allow_html=True
     )
 
@@ -350,19 +331,19 @@ def render_information_block(
 
         safe_label = escape(str(label))
         safe_value = escape(str(value))
-        displayed_value = (
-            f"<code>{safe_value}</code>"
-            if use_code
-            else safe_value
-        )
+
+        if use_code:
+            displayed_value = f"<code>{safe_value}</code>"
+        else:
+            displayed_value = safe_value
 
         rows.append(
             '<div class="checkit-info-row">'
             f'<div class="checkit-info-label">{safe_label}</div>'
             '<div class="checkit-info-value">'
             f"{displayed_value}"
-            '</div>'
-            '</div>'
+            "</div>"
+            "</div>"
         )
 
     if not rows:
@@ -372,7 +353,7 @@ def render_information_block(
     st.markdown(
         '<div class="checkit-info-card">'
         f"{''.join(rows)}"
-        '</div>',
+        "</div>",
         unsafe_allow_html=True
     )
 
@@ -391,25 +372,27 @@ def render_refresh_section(
     _, center_column, _ = st.columns([1, 2, 1])
 
     with center_column:
-        if st.button(
+        refresh_requested = st.button(
             button_label,
             width="stretch",
             key=button_key
-        ):
+        )
+
+        if refresh_requested:
             clear_cache()
             st.rerun()
 
+    safe_cache_message = escape(str(cache_message or ""))
+
     st.markdown(
         '<div class="checkit-footer-note">'
-        f"{escape(str(cache_message or ''))}"
-        '</div>',
+        f"{safe_cache_message}"
+        "</div>",
         unsafe_allow_html=True
     )
 
 
-# ============================================================================
-# Durées calculées à partir de dates
-# ============================================================================
+# Calcul des durées
 
 def calculate_duration_seconds(
     start_value: Any,
@@ -444,10 +427,8 @@ def calculate_duration_seconds(
         if end.tzinfo is None:
             end = end.tz_localize("UTC")
 
-        return max(
-            0.0,
-            float((end - start).total_seconds())
-        )
+        duration_seconds = float((end - start).total_seconds())
 
+        return max(0.0, duration_seconds)
     except (TypeError, ValueError, OverflowError):
         return None

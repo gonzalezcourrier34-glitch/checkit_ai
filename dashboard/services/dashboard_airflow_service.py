@@ -36,9 +36,7 @@ from src.logger import get_logger
 logger = get_logger(__name__)
 
 
-# ============================================================================
 # Configuration
-# ============================================================================
 
 AIRFLOW_BASE_URL = (
     os.getenv(
@@ -113,9 +111,7 @@ FAILED_TASK_STATES = {
 }
 
 
-# ============================================================================
 # Erreurs
-# ============================================================================
 
 class AirflowServiceError(RuntimeError):
     """Erreur produite pendant un appel à l'API Airflow."""
@@ -129,9 +125,7 @@ class AirflowNotFoundError(AirflowServiceError):
     """Ressource Airflow introuvable."""
 
 
-# ============================================================================
 # Session HTTP
-# ============================================================================
 
 _session: Session | None = None
 _access_token: str | None = AIRFLOW_ACCESS_TOKEN or None
@@ -187,9 +181,7 @@ def get_session() -> Session:
     return _session
 
 
-# ============================================================================
 # Authentification
-# ============================================================================
 
 def request_access_token(force_refresh: bool = False) -> str:
     """Obtient un jeton JWT auprès du gestionnaire d'authentification."""
@@ -264,9 +256,7 @@ def get_auth_headers() -> dict[str, str]:
     }
 
 
-# ============================================================================
 # Appels API
-# ============================================================================
 
 def airflow_request(
     method: str,
@@ -401,6 +391,25 @@ def encode_path_value(value: str) -> str:
     return quote(str(value), safe="")
 
 
+def build_dag_path(
+    dag_id: str,
+    *parts: str
+) -> str:
+    """Construit un chemin API Airflow sécurisé pour un DAG."""
+
+    encoded_parts = [
+        encode_path_value(part)
+        for part in parts
+    ]
+
+    path = f"/dags/{encode_path_value(dag_id)}"
+
+    if encoded_parts:
+        path = f"{path}/{'/'.join(encoded_parts)}"
+
+    return path
+
+
 def get_collection(
     payload: dict[str, Any],
     *possible_keys: str
@@ -429,9 +438,7 @@ def get_collection(
     return []
 
 
-# ============================================================================
 # Disponibilité et santé
-# ============================================================================
 
 def get_airflow_version() -> dict[str, Any]:
     """Retourne la version exposée par Airflow."""
@@ -535,9 +542,7 @@ def test_connection() -> dict[str, Any]:
     }
 
 
-# ============================================================================
 # DAGs
-# ============================================================================
 
 def get_dags(
     *,
@@ -577,11 +582,9 @@ def get_dags(
 def get_dag(dag_id: str) -> dict[str, Any]:
     """Retourne les informations d'un DAG."""
 
-    encoded_dag_id = encode_path_value(dag_id)
-
     return airflow_request(
         "GET",
-        f"/dags/{encoded_dag_id}"
+        build_dag_path(dag_id)
     )
 
 
@@ -601,11 +604,9 @@ def set_dag_paused(
 ) -> dict[str, Any]:
     """Met un DAG en pause ou le réactive."""
 
-    encoded_dag_id = encode_path_value(dag_id)
-
     return airflow_request(
         "PATCH",
-        f"/dags/{encoded_dag_id}",
+        build_dag_path(dag_id),
         payload={
             "is_paused": bool(is_paused)
         }
@@ -624,9 +625,7 @@ def unpause_dag(dag_id: str) -> dict[str, Any]:
     return set_dag_paused(dag_id, False)
 
 
-# ============================================================================
 # Exécutions des DAGs
-# ============================================================================
 
 def get_dag_runs(
     dag_id: str = "~",
@@ -647,7 +646,7 @@ def get_dag_runs(
 
     payload = airflow_request(
         "GET",
-        f"/dags/{encoded_dag_id}/dagRuns",
+        build_dag_path(dag_id, "dagRuns"),
         parameters={
             "limit": safe_limit,
             "offset": safe_offset,
@@ -668,14 +667,12 @@ def get_dag_run(
 ) -> dict[str, Any]:
     """Retourne une exécution précise d'un DAG."""
 
-    encoded_dag_id = encode_path_value(dag_id)
-    encoded_run_id = encode_path_value(dag_run_id)
-
     return airflow_request(
         "GET",
-        (
-            f"/dags/{encoded_dag_id}"
-            f"/dagRuns/{encoded_run_id}"
+        build_dag_path(
+            dag_id,
+            "dagRuns",
+            dag_run_id
         )
     )
 
@@ -704,8 +701,6 @@ def trigger_dag(
 ) -> dict[str, Any]:
     """Déclenche manuellement un DAG Airflow."""
 
-    encoded_dag_id = encode_path_value(dag_id)
-
     # Airflow exige la présence du champ logical_date,
     # même pour un déclenchement manuel sans date imposée.
     payload: dict[str, Any] = {
@@ -721,7 +716,7 @@ def trigger_dag(
 
     result = airflow_request(
         "POST",
-        f"/dags/{encoded_dag_id}/dagRuns",
+        build_dag_path(dag_id, "dagRuns"),
         payload=payload
     )
 
@@ -732,6 +727,7 @@ def trigger_dag(
     )
 
     return result
+
 
 def trigger_checkit_pipeline(
     *,
@@ -773,9 +769,7 @@ def get_failed_dag_runs(
     ]
 
 
-# ============================================================================
 # Tâches
-# ============================================================================
 
 def get_task_instances(
     dag_id: str,
@@ -788,15 +782,13 @@ def get_task_instances(
 
     safe_limit = normalize_limit(limit)
     safe_offset = normalize_offset(offset)
-    encoded_dag_id = encode_path_value(dag_id)
-    encoded_run_id = encode_path_value(dag_run_id)
-
     payload = airflow_request(
         "GET",
-        (
-            f"/dags/{encoded_dag_id}"
-            f"/dagRuns/{encoded_run_id}"
-            "/taskInstances"
+        build_dag_path(
+            dag_id,
+            "dagRuns",
+            dag_run_id,
+            "taskInstances"
         ),
         parameters={
             "limit": safe_limit,
@@ -819,16 +811,14 @@ def get_task_instance(
 ) -> dict[str, Any]:
     """Retourne une tâche précise d'un DagRun."""
 
-    encoded_dag_id = encode_path_value(dag_id)
-    encoded_run_id = encode_path_value(dag_run_id)
-    encoded_task_id = encode_path_value(task_id)
-
     return airflow_request(
         "GET",
-        (
-            f"/dags/{encoded_dag_id}"
-            f"/dagRuns/{encoded_run_id}"
-            f"/taskInstances/{encoded_task_id}"
+        build_dag_path(
+            dag_id,
+            "dagRuns",
+            dag_run_id,
+            "taskInstances",
+            task_id
         ),
         parameters={
             "map_index": int(map_index)
@@ -865,9 +855,7 @@ def get_task_state_summary(
     return summary
 
 
-# ============================================================================
 # Logs
-# ============================================================================
 
 def get_task_log(
     dag_id: str,
@@ -880,17 +868,16 @@ def get_task_log(
 ) -> str:
     """Retourne le journal d'une tentative de tâche."""
 
-    encoded_dag_id = encode_path_value(dag_id)
-    encoded_run_id = encode_path_value(dag_run_id)
-    encoded_task_id = encode_path_value(task_id)
-
     payload = airflow_request(
         "GET",
-        (
-            f"/dags/{encoded_dag_id}"
-            f"/dagRuns/{encoded_run_id}"
-            f"/taskInstances/{encoded_task_id}"
-            f"/logs/{int(task_try_number)}"
+        build_dag_path(
+            dag_id,
+            "dagRuns",
+            dag_run_id,
+            "taskInstances",
+            task_id,
+            "logs",
+            str(int(task_try_number))
         ),
         parameters={
             "map_index": int(map_index),
@@ -911,9 +898,7 @@ def get_task_log(
     return str(content)
 
 
-# ============================================================================
 # Statistiques du dashboard
-# ============================================================================
 
 def get_dag_run_summary(
     *,
@@ -1057,9 +1042,7 @@ def get_recent_failures(
     return failures
 
 
-# ============================================================================
 # Utilitaires
-# ============================================================================
 
 def parse_datetime(value: Any) -> datetime | None:
     """Convertit une date Airflow ISO en datetime."""

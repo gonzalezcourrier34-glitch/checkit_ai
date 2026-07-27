@@ -2,33 +2,37 @@
 
 ## Objectif
 
-Le pipeline CheckIt.AI est conçu comme une succession d'étapes indépendantes exécutées dans un ordre précis. Chaque étape produit les données nécessaires à la suivante jusqu'à constituer un jeu de données exploitable et validé.
+Le pipeline **CheckIt.AI** est constitué de plusieurs DAGs spécialisés exécutés dans un ordre précis.
 
-L'ensemble du processus est orchestré par le DAG maître **`checkit_master_pipeline`**, qui déclenche successivement les différents DAGs spécialisés.
+Chaque étape possède une responsabilité unique et produit les données nécessaires à la suivante jusqu'à obtenir un jeu de données multimodal chargé dans PostgreSQL puis validé par un contrôle qualité.
+
+J'ai choisi de confier l'orchestration complète au DAG maître **`checkit_master_pipeline`**, qui déclenche successivement chacun des DAGs spécialisés tout en leur transmettant une configuration commune. :contentReference[oaicite:0]{index=0} :contentReference[oaicite:1]{index=1} :contentReference[oaicite:2]{index=2} :contentReference[oaicite:3]{index=3}
 
 ---
 
 ## Vue d'ensemble
 
-Le déroulement complet d'une exécution est présenté ci-dessous.
+Le déroulement complet du pipeline est présenté ci-dessous.
 
 ```mermaid
 flowchart LR
 
-A[checkit_master_pipeline]
+Master["checkit_master_pipeline"]
 
-A --> B[checkit_extract]
+Master --> Extract["checkit_extract"]
 
-B --> C[checkit_transform]
+Extract --> Transform["checkit_transform"]
 
-C --> D[checkit_load]
+Transform --> Load["checkit_load"]
 
-D --> E[checkit_quality]
+Load --> Quality["checkit_quality"]
 
-E --> F[Pipeline terminé]
+Quality --> End["Pipeline terminé"]
 ```
 
-Chaque DAG possède une responsabilité unique et ne démarre que lorsque le précédent s'est terminé avec succès.
+Le DAG maître attend systématiquement la fin d'une étape avant de déclencher la suivante.
+
+Cette organisation garantit qu'aucun traitement n'est exécuté sur des données incomplètes.
 
 ---
 
@@ -40,28 +44,31 @@ Une exécution complète du pipeline suit les étapes suivantes.
 
 L'utilisateur déclenche le DAG maître depuis l'interface Airflow.
 
-Le DAG :
+Le DAG maître :
 
 - crée une nouvelle exécution ;
-- génère un identifiant de lot (`batch_id`) ;
+- construit un identifiant de lot (`batch_id`) ;
 - prépare la configuration commune ;
-- déclenche le DAG d'extraction.
+- transmet cette configuration aux différents DAGs ;
+- attend la fin de chaque étape avant de poursuivre.
+
+Le même identifiant de lot est utilisé durant toute l'exécution du pipeline.
 
 ---
 
 ### 2. Extraction
 
-Le DAG **checkit_extract** interroge les différentes sources configurées.
+Le DAG **`checkit_extract`** collecte les données depuis les différentes sources configurées.
 
-Les opérations réalisées sont :
+Les principales opérations réalisées sont :
 
-- récupération des articles ;
+- extraction des articles ;
 - téléchargement des images ;
-- validation des fichiers ;
+- validation des images ;
 - suppression des articles non exploitables ;
-- génération du premier lot.
+- génération du lot d'articles validés.
 
-Fichiers produits :
+Les principaux fichiers produits sont :
 
 ```text
 01_extracted_articles.json
@@ -69,20 +76,23 @@ Fichiers produits :
 01_extraction_report.json
 ```
 
+Des fichiers intermédiaires sont également utilisés pendant cette étape avant d'être supprimés une fois le traitement terminé.
+
 ---
 
 ### 3. Transformation
 
-Le DAG **checkit_transform** prépare les données pour PostgreSQL.
+Le DAG **`checkit_transform`** prépare les données pour PostgreSQL.
 
 Cette étape :
 
 - lit les articles extraits ;
-- normalise les données ;
-- sépare les informations dans les différentes structures ;
-- génère les fichiers correspondant aux futures tables de la base.
+- transforme les données vers le modèle relationnel ;
+- sépare les différentes collections ;
+- valide les références entre les entités ;
+- génère les fichiers destinés au chargement.
 
-Fichiers produits :
+Les fichiers produits sont :
 
 ```text
 02_articles_ready.json
@@ -96,84 +106,91 @@ Fichiers produits :
 02_transformation_report.json
 ```
 
+Un fichier temporaire est utilisé durant la transformation puis supprimé après la génération des fichiers définitifs.
+
 ---
 
 ### 4. Chargement
 
-Le DAG **checkit_load** insère les données dans PostgreSQL.
+Le DAG **`checkit_load`** prépare puis charge les données dans PostgreSQL.
 
-Les principales opérations sont :
+Cette étape réalise notamment :
 
-- validation des fichiers ;
-- contrôle des références ;
-- ouverture d'une transaction ;
-- insertion des données ;
-- validation de la transaction.
+- la validation des collections ;
+- la vérification des références ;
+- la préparation des métadonnées du pipeline ;
+- le chargement dans PostgreSQL ;
+- la génération du rapport de chargement.
 
-Fichier produit :
+Le principal fichier produit est :
 
 ```text
 03_load_report.json
 ```
 
+Un fichier intermédiaire est également utilisé pendant le chargement avant d'être supprimé une fois le rapport final généré.
+
 ---
 
 ### 5. Contrôle qualité
 
-Le DAG **checkit_quality** analyse les données présentes dans PostgreSQL.
+Le DAG **`checkit_quality`** calcule les indicateurs de qualité directement dans PostgreSQL.
 
-Les indicateurs calculés sont comparés aux seuils définis dans la configuration du pipeline.
+Cette étape :
 
-À l'issue du traitement :
+- lit le rapport de chargement ;
+- récupère l'identifiant du pipeline ;
+- calcule les KPI ;
+- compare les résultats aux seuils de qualité ;
+- produit le rapport final.
 
-- un rapport qualité est généré ;
-- le lot est validé ou rejeté.
-
-Fichier produit :
+Le fichier généré est :
 
 ```text
 04_quality_report.json
 ```
 
+À l'issue de cette étape, le lot est déclaré conforme ou non conforme.
+
 ---
 
 ## Communication entre les étapes
 
-Chaque DAG produit les fichiers utilisés par le suivant.
+Chaque DAG produit uniquement les fichiers nécessaires au suivant.
 
 ```mermaid
 flowchart LR
 
-Extract
+Extract["Extraction"]
 
--->|"01_extracted_articles.json"| Transform
+Transform["Transformation"]
 
-Transform
+Load["Chargement"]
 
--->|"02_articles_ready.json"| Load
+Quality["Contrôle qualité"]
 
-Load
+Extract -->|"01_extracted_articles.json"| Transform
 
--->|"03_load_report.json"| Quality
+Transform -->|"02_*_ready.json"| Load
 
-Quality
+Load -->|"03_load_report.json"| Quality
 
--->|"04_quality_report.json"| Fin
+Quality -->|"04_quality_report.json"| End["Fin du pipeline"]
 ```
 
-Les données sont échangées via le dossier partagé du lot.
+Toutes les données sont échangées via le dossier partagé du lot.
 
-```
+```text
 /opt/airflow/shared/lots/<batch_id>/
 ```
 
-Cette organisation permet de conserver un historique complet de chaque exécution.
+Les données métier ne transitent jamais dans les XCom.
 
 ---
 
 ## Cycle de vie d'un lot
 
-Le cycle de vie d'un lot peut être résumé de la manière suivante.
+Le cycle de vie complet d'un lot peut être résumé de la manière suivante.
 
 ```mermaid
 flowchart TD
@@ -191,13 +208,13 @@ D --> E[Contrôle qualité]
 E --> F[Lot validé]
 ```
 
-À chaque étape, de nouvelles informations sont ajoutées ou transformées jusqu'à produire un jeu de données complet.
+À chaque étape, les données sont enrichies, contrôlées ou restructurées avant d'être transmises au DAG suivant.
 
 ---
 
 ## Résultat d'une exécution
 
-À la fin du pipeline, les éléments suivants sont disponibles.
+À la fin du pipeline, deux ensembles de résultats sont disponibles.
 
 ### Base PostgreSQL
 
@@ -210,20 +227,18 @@ Les principales tables sont alimentées :
 - `article_labels`
 - `article_features`
 
-Ces données constituent le jeu de données final.
+Ces tables constituent le jeu de données final exploitable.
 
 ---
 
 ### Dossier du lot
 
-Le répertoire partagé contient l'ensemble des fichiers générés pendant le traitement.
-
-Exemple :
+Le dossier partagé contient les principaux fichiers produits pendant l'exécution.
 
 ```text
 /opt/airflow/shared/lots/
 
-└── manual__2026-07-15T08_31_32_412871_00_00/
+└── <batch_id>/
 
     ├── 01_extracted_articles.json
     ├── 01_extraction_report.json
@@ -239,39 +254,58 @@ Exemple :
     └── 04_quality_report.json
 ```
 
-Ce dossier permet de retracer l'ensemble des traitements réalisés sur un lot.
+Les fichiers temporaires utilisés pendant certaines étapes sont supprimés automatiquement lorsque celles-ci se terminent avec succès.
 
 ---
 
 ## Reprise après erreur
 
-Grâce au découpage du pipeline en plusieurs DAGs indépendants, il est possible de relancer uniquement une étape en cas d'échec.
+Le découpage du pipeline en plusieurs DAGs indépendants permet de relancer uniquement l'étape ayant échoué.
 
-Par exemple :
+Par exemple, il est possible de :
 
-- relancer uniquement la transformation après une erreur de structure ;
-- relancer le chargement après une interruption de PostgreSQL ;
-- relancer le contrôle qualité après une modification des seuils.
+- relancer uniquement la transformation après une erreur de validation ;
+- relancer uniquement le chargement après une indisponibilité de PostgreSQL ;
+- relancer uniquement le contrôle qualité après une modification des seuils.
 
-Cette approche évite de recommencer l'ensemble du pipeline lorsque les données extraites restent valides.
+Cette organisation évite de recommencer les étapes précédentes lorsque leurs résultats restent valides.
+
+---
+
+## Suivi de l'exécution
+
+Chaque DAG produit son propre rapport JSON.
+
+| DAG | Rapport produit |
+|------|-----------------|
+| Extraction | `01_extraction_report.json` |
+| Transformation | `02_transformation_report.json` |
+| Chargement | `03_load_report.json` |
+| Contrôle qualité | `04_quality_report.json` |
+
+Ces rapports permettent de suivre précisément le déroulement du pipeline et de conserver un historique complet de chaque lot.
 
 ---
 
 ## Avantages de cette organisation
 
-Le découpage du pipeline présente plusieurs bénéfices.
+Cette architecture présente plusieurs avantages.
 
-- Les responsabilités sont clairement séparées.
-- Les traitements restent indépendants.
-- Les performances de chaque étape peuvent être mesurées individuellement.
-- Les erreurs sont plus faciles à localiser.
+- Les responsabilités sont clairement réparties entre les DAGs.
+- Les traitements restent faiblement couplés.
 - Les fichiers intermédiaires facilitent les tests et le débogage.
-- Les différentes étapes peuvent évoluer indépendamment les unes des autres.
+- Les performances de chaque étape peuvent être mesurées séparément.
+- Les contrôles sont réalisés progressivement.
+- Les données volumineuses ne transitent jamais dans Airflow.
+- Chaque étape peut être relancée indépendamment.
+- L'ensemble des traitements reste facilement traçable.
 
 ---
 
 ## Résumé
 
-Une exécution complète du pipeline CheckIt.AI consiste à enchaîner successivement les étapes d'extraction, de transformation, de chargement et de contrôle qualité.
+Une exécution complète du pipeline **CheckIt.AI** consiste à enchaîner successivement les DAGs d'extraction, de transformation, de chargement puis de contrôle qualité.
 
-L'orchestration réalisée par Apache Airflow garantit que chaque étape est exécutée dans le bon ordre et uniquement lorsque la précédente s'est terminée avec succès. Cette architecture assure la cohérence des données, facilite la maintenance du pipeline et permet de produire un jeu de données multimodal fiable et exploitable.
+J'ai choisi une architecture composée de DAGs spécialisés communiquant uniquement grâce à un identifiant de lot partagé, un dossier commun et une configuration transmise par le DAG maître.
+
+Cette organisation garantit que chaque étape est exécutée dans le bon ordre, facilite la maintenance du pipeline, simplifie les reprises après erreur et permet de produire un jeu de données multimodal fiable, cohérent et directement exploitable.

@@ -1,78 +1,106 @@
 # CheckIt.AI
 
-## Pipeline d'acquisition de données multimodales pour la détection de désinformation
+## Pipeline d'acquisition multimodale pour la collecte et la préparation de données destinées à la détection de désinformation
 
-## Présentation du projet
+# Présentation du projet
 
-Dans le cadre de cette mission, **CheckIt.AI**, une start-up spécialisée dans le développement de solutions d'intelligence artificielle pour la lutte contre la désinformation, souhaite enrichir son moteur d'analyse en créant un pipeline d'acquisition de données multimodales.
+Dans le cadre de cette mission, **CheckIt.AI**, une start-up spécialisée dans le développement de solutions d'intelligence artificielle appliquées à la lutte contre la désinformation, souhaite mettre en place un pipeline complet d'acquisition de données multimodales.
 
-L'objectif est de concevoir un système capable de collecter automatiquement des publications d'actualité contenant à la fois du **texte** et des **images**, à partir de sources accessibles telles que des APIs, des flux RSS ou des sites web lorsque le scraping est autorisé.
+L'objectif est de concevoir une solution capable de collecter automatiquement des publications d'actualité contenant à la fois du **texte** et des **images**, puis de les valider, les transformer, les enrichir et les stocker dans une base de données relationnelle.
 
-Les données collectées ont vocation à alimenter les futures étapes du moteur d'analyse développé par CheckIt.AI.
-
----
-
-## Contexte
-
-La désinformation ne se limite plus à un simple texte. Les campagnes de manipulation s'appuient désormais sur plusieurs modalités de données : photographies sorties de leur contexte, montages, captures d'écran, infographies trompeuses ou encore images générées par intelligence artificielle (Multimodal Fake News Detection: A Survey).
-
-Pour entraîner des modèles capables d'identifier ces contenus, il est indispensable de disposer de jeux de données où chaque publication associe correctement :
-
-* un contenu textuel ;
-* une ou plusieurs images ;
-* des métadonnées (date, source, URL, auteur lorsque disponible).
-
-Cette première étape consiste donc à identifier les meilleures sources de données et à évaluer leur pertinence avant de développer le pipeline d'acquisition.
+Les données produites ont vocation à alimenter les futures étapes du moteur d'analyse développé par CheckIt.AI, notamment l'entraînement de modèles de détection automatique de désinformation.
 
 ---
 
-## Objectifs de la mission
+# Contexte
 
-Les objectifs de ce projet sont les suivants :
+La désinformation ne se limite plus à un simple texte. Les campagnes de manipulation utilisent aujourd'hui plusieurs modalités de données : photographies sorties de leur contexte, montages, captures d'écran, infographies trompeuses ou encore images générées par intelligence artificielle.
 
-* identifier plusieurs sources de données multimodales pertinentes pour la détection de désinformation ;
-* comparer ces sources selon des critères techniques et fonctionnels ;
-* sélectionner les sources les plus adaptées aux besoins de CheckIt.AI ;
-* définir une stratégie d'extraction automatisée adaptée à chaque source (API REST, téléchargement de datasets, flux RSS ou scraping lorsque cela est autorisé) ;
-* proposer un format de données standardisé facilitant les traitements ultérieurs.
+Afin d'entraîner des modèles capables d'identifier ces contenus, il est nécessaire de disposer d'un corpus fiable associant :
 
----
+- un contenu textuel ;
+- une ou plusieurs images ;
+- des métadonnées (date, source, URL, auteur lorsque disponible) ;
+- des informations permettant d'assurer la traçabilité des données.
 
-## Périmètre de l'étude
-
-Cette documentation couvre l'ensemble de la phase d'exploration précédant le développement du pipeline.
-
-Les travaux portent notamment sur :
-
-* l'analyse des datasets académiques ;
-* l'étude des APIs d'actualité ;
-* l'exploration des flux RSS ;
-* l'identification de sources ouvertes permettant de récupérer simultanément du texte et des images ;
-* l'évaluation de la qualité des labels disponibles (vrai/faux, fiable/non fiable, absence de labels) ;
-* les contraintes techniques et juridiques liées à l'extraction des données.
+La création d'un pipeline d'acquisition automatisé constitue ainsi une étape essentielle dans la construction d'une chaîne de traitement dédiée au fact-checking.
 
 ---
 
-## Technologies envisagées
+# Objectifs de la mission
 
-Le pipeline sera développé autour des technologies suivantes :
+Les principaux objectifs de ce projet sont les suivants :
 
-* **Python** pour le développement des extracteurs ;
-* **APIs REST** pour la collecte automatisée des données ;
-* **Flux RSS** pour la récupération continue des publications ;
-* **Scraping web** lorsque celui-ci est autorisé par les conditions d'utilisation des sites concernés ;
-* **Airflow** pour l'orchestration des tâches ;
-* **Docker** pour garantir la reproductibilité de l'environnement d'exécution ;
-* **MkDocs** pour la documentation technique du projet.
+- identifier les sources de données les plus pertinentes ;
+- développer des extracteurs adaptés à chaque type de source ;
+- normaliser les données collectées selon un modèle commun ;
+- valider automatiquement les contenus et les images ;
+- transformer les données afin de préparer leur stockage ;
+- alimenter une base PostgreSQL ;
+- contrôler la qualité des données produites ;
+- superviser l'ensemble du pipeline grâce à Apache Airflow et un tableau de bord dédié.
 
 ---
 
-## Organisation de la documentation
+# Périmètre du projet
 
-La documentation est structurée en plusieurs chapitres correspondant aux différentes phases du projet :
+Cette documentation couvre l'ensemble du développement du pipeline CheckIt.AI.
 
-1. **Exploration des sources** : analyse comparative des sources de données multimodales.
-2. **Architecture** : conception du pipeline d'acquisition et choix techniques.
-3. **Pipeline** : développement des modules d'extraction, de validation et de stockage.
-4. **Schemas des structures** : développement des modules d'extraction, de validation et de stockage.
-5. **Résultats** : évaluation du pipeline, statistiques de collecte et perspectives d'amélioration.
+Elle présente notamment :
+
+- l'étude des différentes sources de données ;
+- les choix d'architecture retenus ;
+- le fonctionnement du pipeline d'acquisition ;
+- les schémas des principales structures de données ;
+- la conception de la base PostgreSQL ;
+- l'orchestration avec Apache Airflow ;
+- les résultats obtenus après plusieurs exécutions.
+
+---
+
+# Technologies utilisées
+
+Le projet repose principalement sur les technologies suivantes :
+
+- **Python** pour le développement des extracteurs et des traitements ;
+- **APIs REST**, **flux RSS**, **scraping HTML** et **datasets académiques** pour la collecte des données ;
+- **PostgreSQL** pour le stockage relationnel ;
+- **Apache Airflow** pour l'orchestration des traitements ;
+- **Docker** pour la reproductibilité de l'environnement ;
+- **Streamlit** pour le dashboard de supervision ;
+- **MkDocs Material** pour la documentation technique.
+
+---
+
+# Organisation de la documentation
+
+La documentation est organisée en sept chapitres.
+
+1. **Exploration des sources de données**  
+   Étude comparative des différentes sources utilisées pour constituer un corpus multimodal.
+
+2. **Architecture du projet**  
+   Présentation de l'architecture logicielle, des extracteurs et des principaux choix techniques.
+
+3. **Pipeline d'acquisition**  
+   Description du fonctionnement du pipeline, de son exécution et de sa reproductibilité.
+
+4. **Schémas des données**  
+   Présentation des principales structures de données utilisées par le pipeline.
+
+5. **Structure de la base PostgreSQL**  
+   Description du modèle relationnel, des tables, des index, des vues et des mécanismes de sécurité.
+
+6. **Orchestration avec Apache Airflow**  
+   Présentation des différents DAGs, de leur communication et de la gestion des traitements.
+
+7. **Résultats**  
+   Analyse des exécutions réalisées, du contenu de la base PostgreSQL, du dashboard de supervision ainsi que des limites et perspectives d'évolution du projet.
+
+---
+
+# Objectif de cette documentation
+
+Cette documentation a pour objectif de présenter l'ensemble de la conception et de la réalisation du pipeline **CheckIt.AI**, depuis l'identification des sources de données jusqu'à la production d'un jeu de données multimodal validé, stocké et supervisé.
+
+Elle constitue à la fois un document de conception, un support technique et une référence permettant de comprendre le fonctionnement global du projet.

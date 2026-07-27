@@ -34,9 +34,7 @@ from src.logger import get_logger
 logger = get_logger(__name__)
 
 
-# ============================================================================
 # Configuration
-# ============================================================================
 
 DATABASE_SCHEMA = os.getenv(
     "CHECKIT_DATABASE_SCHEMA",
@@ -98,9 +96,8 @@ ALLOWED_ARTICLE_SORT_COLUMNS = {
 ALLOWED_SORT_DIRECTIONS = {"ASC", "DESC"}
 
 
-# ============================================================================
 # Connexion
-# ============================================================================
+
 
 def create_connection() -> Connection:
     """Crée une connexion PostgreSQL dédiée au dashboard."""
@@ -125,7 +122,9 @@ def create_connection() -> Connection:
     return connection
 
 
+
 @contextmanager
+
 def get_connection() -> Iterator[Connection]:
     """Ouvre puis ferme automatiquement une connexion PostgreSQL."""
 
@@ -144,6 +143,7 @@ def get_connection() -> Iterator[Connection]:
     finally:
         if connection is not None and not connection.closed:
             connection.close()
+
 
 
 def execute_query(
@@ -171,6 +171,7 @@ def execute_query(
             return [dict(row) for row in cursor.fetchall()]
 
 
+
 def execute_scalar(
     query: str,
     parameters: Sequence[Any] | Mapping[str, Any] | None = None,
@@ -186,9 +187,18 @@ def execute_scalar(
     return next(iter(rows[0].values()), default)
 
 
-# ============================================================================
+def execute_one(
+    query: str,
+    parameters: Sequence[Any] | Mapping[str, Any] | None = None
+) -> dict[str, Any]:
+    """Retourne la première ligne d'une requête ou un dictionnaire vide."""
+
+    rows = execute_query(query, parameters)
+    return rows[0] if rows else {}
+
+
 # État de la connexion
-# ============================================================================
+
 
 def test_connection() -> dict[str, Any]:
     """Teste la connexion et retourne son contexte PostgreSQL."""
@@ -219,6 +229,7 @@ def test_connection() -> dict[str, Any]:
     }
 
 
+
 def is_database_available() -> bool:
     """Indique si PostgreSQL est accessible."""
 
@@ -233,9 +244,8 @@ def is_database_available() -> bool:
         return False
 
 
-# ============================================================================
 # Indicateurs globaux
-# ============================================================================
+
 
 def get_table_counts() -> dict[str, int]:
     """Retourne le nombre de lignes des principales tables."""
@@ -283,6 +293,7 @@ def get_table_counts() -> dict[str, int]:
     }
 
 
+
 def get_database_overview() -> dict[str, Any]:
     """Construit les principaux KPI du dashboard."""
 
@@ -309,10 +320,11 @@ def get_database_overview() -> dict[str, Any]:
     }
 
 
+
 def get_database_size() -> dict[str, Any]:
     """Retourne la taille occupée par la base PostgreSQL."""
 
-    rows = execute_query(
+    result = execute_one(
         """
         SELECT
             pg_database_size(current_database()) AS size_bytes,
@@ -322,16 +334,14 @@ def get_database_size() -> dict[str, Any]:
         """
     )
 
-    return rows[0] if rows else {
+    return result or {
         "size_bytes": 0,
         "formatted_size": "0 bytes"
     }
 
 
-
-# ============================================================================
 # Suivi des pipelines
-# ============================================================================
+
 
 def get_latest_pipeline_run() -> dict[str, Any] | None:
     """Retourne la dernière exécution enregistrée."""
@@ -370,6 +380,7 @@ def get_latest_pipeline_run() -> dict[str, Any] | None:
     return rows[0] if rows else None
 
 
+
 def get_pipeline_runs(limit: int = 50) -> list[dict[str, Any]]:
     """Retourne l'historique récent des exécutions."""
 
@@ -402,6 +413,7 @@ def get_pipeline_runs(limit: int = 50) -> list[dict[str, Any]]:
         """,
         (safe_limit,)
     )
+
 
 
 def get_pipeline_summary() -> dict[str, Any]:
@@ -448,6 +460,7 @@ def get_pipeline_summary() -> dict[str, Any]:
     return result
 
 
+
 def get_latest_run_content() -> dict[str, Any]:
     """Compte les entités associées au dernier pipeline_run."""
 
@@ -491,6 +504,7 @@ def get_latest_run_content() -> dict[str, Any]:
     return rows[0] if rows else {}
 
 
+
 def get_recent_pipeline_errors(
     limit: int = 20
 ) -> list[dict[str, Any]]:
@@ -519,9 +533,8 @@ def get_recent_pipeline_errors(
     )
 
 
-# ============================================================================
 # Statistiques sur les sources
-# ============================================================================
+
 
 def get_sources_summary() -> list[dict[str, Any]]:
     """Retourne les volumes et dates de collecte par source."""
@@ -558,6 +571,7 @@ def get_sources_summary() -> list[dict[str, Any]]:
     )
 
 
+
 def get_source_type_distribution() -> list[dict[str, Any]]:
     """Compte les articles par type de source."""
 
@@ -575,9 +589,8 @@ def get_source_type_distribution() -> list[dict[str, Any]]:
     )
 
 
-# ============================================================================
 # Qualité et contenu
-# ============================================================================
+
 
 def get_quality_summary() -> list[dict[str, Any]]:
     """Compte les articles par statut qualité."""
@@ -592,6 +605,7 @@ def get_quality_summary() -> list[dict[str, Any]]:
         ORDER BY article_count DESC;
         """
     )
+
 
 
 def get_language_distribution(
@@ -615,6 +629,7 @@ def get_language_distribution(
     )
 
 
+
 def get_label_distribution() -> list[dict[str, Any]]:
     """Retourne la répartition des labels actifs."""
 
@@ -632,6 +647,7 @@ def get_label_distribution() -> list[dict[str, Any]]:
     )
 
 
+
 def get_image_quality_summary() -> list[dict[str, Any]]:
     """Retourne les statuts de validation des images."""
 
@@ -646,6 +662,7 @@ def get_image_quality_summary() -> list[dict[str, Any]]:
         ORDER BY image_count DESC;
         """
     )
+
 
 
 def get_feature_distribution() -> list[dict[str, Any]]:
@@ -668,6 +685,7 @@ def get_feature_distribution() -> list[dict[str, Any]]:
     )
 
 
+
 def get_daily_article_counts(
     days: int = 30
 ) -> list[dict[str, Any]]:
@@ -687,6 +705,7 @@ def get_daily_article_counts(
         """,
         (safe_days,)
     )
+
 
 
 def get_data_completeness() -> dict[str, Any]:
@@ -761,9 +780,8 @@ def get_data_completeness() -> dict[str, Any]:
     return result
 
 
-# ============================================================================
 # Consultation des articles
-# ============================================================================
+
 
 def get_articles(
     *,
@@ -807,7 +825,7 @@ def get_articles(
             """
             EXISTS (
                 SELECT 1
-                FROM checkit.article_labels AS filtered_label
+                FROM {DATABASE_SCHEMA}.article_labels AS filtered_label
                 WHERE filtered_label.article_id = article.id
                   AND filtered_label.label = %s
                   AND filtered_label.is_active = TRUE
@@ -877,6 +895,7 @@ def get_articles(
     )
 
 
+
 def count_articles(
     *,
     source_key: str | None = None,
@@ -913,6 +932,7 @@ def count_articles(
     )
 
     return int(result or 0)
+
 
 
 def get_article_details(
@@ -984,9 +1004,8 @@ def get_article_details(
     return article
 
 
-# ============================================================================
 # Consultation générique contrôlée
-# ============================================================================
+
 
 def get_table_preview(
     table_name: str,
@@ -1009,14 +1028,15 @@ def get_table_preview(
         """,
         (safe_limit,)
     )
-# ============================================================================
+
+
 # Complétude des données
-# ============================================================================
+
 
 def get_data_completeness_by_source() -> list[dict[str, Any]]:
     """Retourne la complétude des articles pour chaque source."""
 
-    query = """
+    query = f"""
         SELECT
             s.source_key,
             COALESCE(s.display_name, s.source_key, 'unknown') AS display_name,
@@ -1070,7 +1090,7 @@ def get_data_completeness_by_source() -> list[dict[str, Any]]:
                 100.0 * COUNT(*) FILTER (
                     WHERE EXISTS (
                         SELECT 1
-                        FROM checkit.images i
+                        FROM {DATABASE_SCHEMA}.images i
                         WHERE i.article_id = a.id
                         AND i.is_valid IS TRUE
                     )
@@ -1082,7 +1102,7 @@ def get_data_completeness_by_source() -> list[dict[str, Any]]:
                 100.0 * COUNT(*) FILTER (
                     WHERE EXISTS (
                         SELECT 1
-                        FROM checkit.article_labels al
+                        FROM {DATABASE_SCHEMA}.article_labels al
                         WHERE al.article_id = a.id
                     )
                 ) / NULLIF(COUNT(*), 0),
@@ -1093,16 +1113,16 @@ def get_data_completeness_by_source() -> list[dict[str, Any]]:
                 100.0 * COUNT(*) FILTER (
                     WHERE EXISTS (
                         SELECT 1
-                        FROM checkit.article_features af
+                        FROM {DATABASE_SCHEMA}.article_features af
                         WHERE af.article_id = a.id
                     )
                 ) / NULLIF(COUNT(*), 0),
                 2
             ) AS feature_rate
 
-        FROM checkit.articles a
+        FROM {DATABASE_SCHEMA}.articles a
 
-        LEFT JOIN checkit.sources s
+        LEFT JOIN {DATABASE_SCHEMA}.sources s
             ON s.id = a.source_id
 
         GROUP BY
@@ -1117,10 +1137,11 @@ def get_data_completeness_by_source() -> list[dict[str, Any]]:
 
     return execute_query(query)
 
+
 def get_data_completeness_by_source_type() -> list[dict[str, Any]]:
     """Retourne la complétude des articles par type de source."""
 
-    query = """
+    query = f"""
         SELECT
             COALESCE(s.source_type, 'unknown') AS source_type,
             COUNT(*) AS article_count,
@@ -1172,7 +1193,7 @@ def get_data_completeness_by_source_type() -> list[dict[str, Any]]:
                 100.0 * COUNT(*) FILTER (
                     WHERE EXISTS (
                         SELECT 1
-                        FROM checkit.images i
+                        FROM {DATABASE_SCHEMA}.images i
                         WHERE i.article_id = a.id
                         AND i.is_valid IS TRUE
                     )
@@ -1184,7 +1205,7 @@ def get_data_completeness_by_source_type() -> list[dict[str, Any]]:
                 100.0 * COUNT(*) FILTER (
                     WHERE EXISTS (
                         SELECT 1
-                        FROM checkit.article_labels al
+                        FROM {DATABASE_SCHEMA}.article_labels al
                         WHERE al.article_id = a.id
                     )
                 ) / NULLIF(COUNT(*), 0),
@@ -1195,16 +1216,16 @@ def get_data_completeness_by_source_type() -> list[dict[str, Any]]:
                 100.0 * COUNT(*) FILTER (
                     WHERE EXISTS (
                         SELECT 1
-                        FROM checkit.article_features af
+                        FROM {DATABASE_SCHEMA}.article_features af
                         WHERE af.article_id = a.id
                     )
                 ) / NULLIF(COUNT(*), 0),
                 2
             ) AS feature_rate
 
-        FROM checkit.articles a
+        FROM {DATABASE_SCHEMA}.articles a
 
-        LEFT JOIN checkit.sources s
+        LEFT JOIN {DATABASE_SCHEMA}.sources s
             ON s.id = a.source_id
 
         GROUP BY
@@ -1217,10 +1238,11 @@ def get_data_completeness_by_source_type() -> list[dict[str, Any]]:
 
     return execute_query(query)
 
+
 def get_image_completeness() -> dict[str, Any]:
     """Retourne la complétude technique des images enregistrées."""
 
-    query = """
+    query = f"""
         SELECT
             COUNT(*) AS total_images,
 
@@ -1389,17 +1411,18 @@ def get_image_completeness() -> dict[str, Any]:
                 2
             ) AS with_entropy_score_rate
 
-        FROM checkit.images
+        FROM {DATABASE_SCHEMA}.images
     """
 
     rows = execute_query(query)
     return rows[0] if rows else {}
 
 
+
 def get_metadata_completeness() -> dict[str, Any]:
     """Retourne la complétude des métadonnées éditoriales."""
 
-    query = """
+    query = f"""
         SELECT
             COUNT(*) AS total_articles,
 
@@ -1529,7 +1552,7 @@ def get_metadata_completeness() -> dict[str, Any]:
                 2
             ) AS with_quality_status_rate
 
-        FROM checkit.articles
+        FROM {DATABASE_SCHEMA}.articles
     """
 
     rows = execute_query(query)

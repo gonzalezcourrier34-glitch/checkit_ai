@@ -19,6 +19,23 @@ from typing import Any
 
 import streamlit as st
 
+from dashboard.dashboard.dashboard_layout import (
+    apply_dashboard_layout,
+    render_content_card,
+    render_information_rows,
+    render_layout_section_header,
+    render_notice,
+    render_page_header
+)
+from dashboard.dashboard.dashboard_ui_utils import (
+    format_dag_name,
+    format_datetime,
+    format_number,
+    format_status,
+    render_metric_cards,
+    render_refresh_section,
+    rows_to_dataframe
+)
 from dashboard.services.dashboard_airflow_service import (
     AirflowServiceError,
     get_checkit_dags,
@@ -29,32 +46,19 @@ from dashboard.services.dashboard_airflow_service import (
     trigger_dag,
     unpause_dag
 )
-from dashboard.services.dahsboard_postgres_service import (
+from dashboard.services.dashboard_postgres_service import (
     ALLOWED_TABLES,
     get_database_size,
     get_table_counts,
     get_table_preview,
     test_connection as test_postgres_connection
 )
-from dashboard.dashboard_ui_utils import (
-    format_dag_name,
-    format_datetime,
-    format_number,
-    format_status,
-    render_information_block,
-    render_metric_cards,
-    render_refresh_section,
-    render_section_header,
-    rows_to_dataframe
-)
 from src.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-# ============================================================================
 # Configuration
-# ============================================================================
 
 DANGEROUS_DAGS = {
     "checkit_cleanup_dag",
@@ -65,9 +69,7 @@ DEFAULT_TABLE = "articles"
 DEFAULT_PREVIEW_LIMIT = 50
 
 
-# ============================================================================
 # Cache
-# ============================================================================
 
 @st.cache_data(ttl=15, show_spinner=False)
 def load_postgres_connection() -> dict[str, Any]:
@@ -129,253 +131,32 @@ def load_table_preview(
     )
 
 
-# ============================================================================
-# Style
-# ============================================================================
-
-def render_administration_style() -> None:
-    """Applique le style visuel de la page Administration."""
-
-    st.markdown(
-        """
-        <style>
-            .checkit-admin-header {
-                padding: 1.35rem 1.5rem;
-                margin-bottom: 1.25rem;
-                border: 1px solid rgba(128, 132, 149, 0.18);
-                border-radius: 1.1rem;
-                background:
-                    radial-gradient(
-                        circle at top right,
-                        rgba(255, 155, 72, 0.18),
-                        transparent 38%
-                    ),
-                    rgba(128, 132, 149, 0.045);
-            }
-
-            .checkit-admin-eyebrow {
-                margin-bottom: 0.45rem;
-                color: #8d91a4;
-                font-size: 0.72rem;
-                font-weight: 700;
-                letter-spacing: 0.11em;
-                text-transform: uppercase;
-            }
-
-            .checkit-admin-title {
-                margin: 0;
-                font-size: 2rem;
-                font-weight: 780;
-                line-height: 1.15;
-            }
-
-            .checkit-admin-description {
-                max-width: 54rem;
-                margin-top: 0.55rem;
-                color: #9397a8;
-                font-size: 0.92rem;
-                line-height: 1.5;
-            }
-
-            .checkit-section-header {
-                display: flex;
-                align-items: center;
-                gap: 0.65rem;
-                margin: 1.1rem 0 0.85rem;
-            }
-
-            .checkit-section-icon {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 2rem;
-                height: 2rem;
-                flex: 0 0 2rem;
-                border-radius: 0.65rem;
-                font-size: 0.92rem;
-                background: rgba(255, 155, 72, 0.14);
-            }
-
-            .checkit-section-title {
-                margin: 0;
-                font-size: 1.05rem;
-                font-weight: 720;
-                line-height: 1.2;
-            }
-
-            .checkit-section-description {
-                margin-top: 0.15rem;
-                color: #8d91a4;
-                font-size: 0.76rem;
-                line-height: 1.35;
-            }
-
-            .checkit-info-card {
-                padding: 0.9rem 1rem;
-                border: 1px solid rgba(128, 132, 149, 0.18);
-                border-radius: 0.8rem;
-                background: rgba(128, 132, 149, 0.04);
-            }
-
-            .checkit-info-row {
-                padding: 0.55rem 0;
-                border-bottom: 1px solid rgba(128, 132, 149, 0.12);
-            }
-
-            .checkit-info-row:last-child {
-                border-bottom: none;
-            }
-
-            .checkit-info-label {
-                color: #8d91a4;
-                font-size: 0.68rem;
-                font-weight: 700;
-                letter-spacing: 0.05em;
-                text-transform: uppercase;
-            }
-
-            .checkit-info-value {
-                margin-top: 0.18rem;
-                font-size: 0.84rem;
-                line-height: 1.35;
-                word-break: break-word;
-            }
-
-            .checkit-danger-card {
-                padding: 0.9rem 1rem;
-                margin-bottom: 0.85rem;
-                border: 1px solid rgba(255, 93, 93, 0.26);
-                border-radius: 0.8rem;
-                background: rgba(255, 93, 93, 0.08);
-                color: #ff7c7c;
-                font-size: 0.82rem;
-                line-height: 1.45;
-            }
-
-            .checkit-safe-card {
-                padding: 0.9rem 1rem;
-                margin-bottom: 0.85rem;
-                border: 1px solid rgba(49, 199, 106, 0.24);
-                border-radius: 0.8rem;
-                background: rgba(49, 199, 106, 0.08);
-                color: #54d889;
-                font-size: 0.82rem;
-                line-height: 1.45;
-            }
-
-            .checkit-maintenance-card {
-                height: 100%;
-                padding: 1rem;
-                border: 1px solid rgba(128, 132, 149, 0.18);
-                border-radius: 0.9rem;
-                background: rgba(128, 132, 149, 0.04);
-            }
-
-            .checkit-maintenance-title {
-                margin-bottom: 0.45rem;
-                font-size: 0.98rem;
-                font-weight: 720;
-            }
-
-            .checkit-maintenance-text {
-                color: #9a9eae;
-                font-size: 0.8rem;
-                line-height: 1.5;
-            }
-
-            .checkit-footer-note {
-                margin-top: 0.6rem;
-                color: #85899b;
-                font-size: 0.72rem;
-                text-align: center;
-            }
-
-            div[data-testid="stMetric"] {
-                padding: 0.15rem 0;
-            }
-
-            div[data-testid="stMetricLabel"] {
-                color: #9296a8;
-                font-size: 0.78rem;
-            }
-
-            div[data-testid="stMetricValue"] {
-                font-size: 1.3rem;
-                font-weight: 750;
-            }
-
-            div[data-testid="stVerticalBlockBorderWrapper"] {
-                border-color: rgba(128, 132, 149, 0.18);
-                border-radius: 0.9rem;
-                background: rgba(128, 132, 149, 0.035);
-            }
-
-            button[data-baseweb="tab"] {
-                height: 3rem;
-                padding-left: 1rem;
-                padding-right: 1rem;
-                font-weight: 650;
-            }
-
-            [data-testid="stDataFrame"] {
-                border: 1px solid rgba(128, 132, 149, 0.16);
-                border-radius: 0.8rem;
-                overflow: hidden;
-            }
-
-            div[data-testid="stSelectbox"] label,
-            div[data-testid="stTextArea"] label,
-            div[data-testid="stNumberInput"] label,
-            div[data-testid="stCheckbox"] label {
-                color: #8d91a4;
-                font-size: 0.77rem;
-                font-weight: 600;
-            }
-
-            div[data-testid="stButton"] button,
-            div[data-testid="stFormSubmitButton"] button {
-                min-height: 2.6rem;
-                border-radius: 0.75rem;
-                font-weight: 650;
-            }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-# ============================================================================
 # En-tête
-# ============================================================================
 
 def render_header() -> None:
-    """Affiche le titre et la description de la page."""
+    """Affiche l'en-tête de la page Administration."""
 
-    st.markdown(
-        '<div class="checkit-admin-header">'
-        '<div class="checkit-admin-eyebrow">'
-        'Console technique'
-        '</div>'
-        '<div class="checkit-admin-title">'
-        '🛠️ Administration CheckIt.AI'
-        '</div>'
-        '<div class="checkit-admin-description">'
-        'Contrôle des services, pilotage des DAGs Airflow et '
-        'consultation technique de la base PostgreSQL.'
-        '</div>'
-        '</div>',
-        unsafe_allow_html=True
+    render_page_header(
+        eyebrow="Console technique",
+        title="🛠️ Administration CheckIt.AI",
+        description=(
+            "Contrôle des services, pilotage des DAGs Airflow et "
+            "consultation technique de la base PostgreSQL."
+        ),
+        badges=[
+            "Airflow",
+            "PostgreSQL",
+            "Actions contrôlées"
+        ]
     )
 
 
-# ============================================================================
 # État des services
-# ============================================================================
 
 def render_services_section() -> None:
     """Affiche les contrôles PostgreSQL et Airflow."""
 
-    render_section_header(
+    render_layout_section_header(
         "🔌",
         "État des services",
         "Disponibilité des composants techniques de la plateforme."
@@ -404,21 +185,24 @@ def render_postgres_status() -> None:
 
         st.success("PostgreSQL est accessible.")
 
-        render_metric_cards([
-            (
-                "Base",
-                str(connection.get("database") or "Inconnue")
-            ),
-            (
-                "Taille",
-                str(
-                    database_size.get("formatted_size")
-                    or "Inconnue"
+        render_metric_cards(
+            [
+                (
+                    "Base",
+                    str(connection.get("database") or "Inconnue")
+                ),
+                (
+                    "Taille",
+                    str(
+                        database_size.get("formatted_size")
+                        or "Inconnue"
+                    )
                 )
-            )
-        ], columns_count=2)
+            ],
+            columns_count=2
+        )
 
-        render_information_block([
+        render_information_rows([
             (
                 "Utilisateur",
                 connection.get("database_user", "inconnu")
@@ -455,27 +239,23 @@ def render_airflow_status() -> None:
         health = load_airflow_health()
         global_status = health.get("status", "unknown")
 
-        if global_status == "healthy":
-            st.success("Airflow est opérationnel.")
-        elif global_status == "unhealthy":
-            st.error("Un composant Airflow est indisponible.")
-        else:
-            st.warning(
-                "L'état global d'Airflow n'a pas pu être déterminé."
-            )
+        render_airflow_global_status(global_status)
 
-        render_metric_cards([
-            (
-                "Version",
-                str(connection.get("version") or "Inconnue")
-            ),
-            (
-                "État",
-                format_status(global_status)
-            )
-        ], columns_count=2)
+        render_metric_cards(
+            [
+                (
+                    "Version",
+                    str(connection.get("version") or "Inconnue")
+                ),
+                (
+                    "État",
+                    format_status(global_status)
+                )
+            ],
+            columns_count=2
+        )
 
-        render_information_block([
+        render_information_rows([
             (
                 "Adresse",
                 connection.get("base_url", "inconnue")
@@ -500,6 +280,24 @@ def render_airflow_status() -> None:
             st.code(str(error))
 
 
+def render_airflow_global_status(
+    global_status: str
+) -> None:
+    """Affiche le statut global d'Airflow."""
+
+    if global_status == "healthy":
+        st.success("Airflow est opérationnel.")
+        return
+
+    if global_status == "unhealthy":
+        st.error("Un composant Airflow est indisponible.")
+        return
+
+    st.warning(
+        "L'état global d'Airflow n'a pas pu être déterminé."
+    )
+
+
 def render_airflow_components(
     components: dict[str, dict[str, Any]]
 ) -> None:
@@ -515,14 +313,19 @@ def render_airflow_components(
     rows = []
 
     for component_name, component in components.items():
+        heartbeat = (
+            component.get("latest_heartbeat")
+            or component.get("latest_scheduler_heartbeat")
+            or component.get("last_heartbeat")
+        )
+
         rows.append({
-            "Composant": component_name.replace("_", " ").capitalize(),
+            "Composant": component_name.replace(
+                "_",
+                " "
+            ).capitalize(),
             "État": format_status(component.get("status")),
-            "Dernier battement": format_datetime(
-                component.get("latest_heartbeat")
-                or component.get("latest_scheduler_heartbeat")
-                or component.get("last_heartbeat")
-            )
+            "Dernier battement": format_datetime(heartbeat)
         })
 
     st.dataframe(
@@ -532,14 +335,12 @@ def render_airflow_components(
     )
 
 
-# ============================================================================
 # Contrôle des DAGs
-# ============================================================================
 
 def render_dag_control_section() -> None:
     """Affiche les commandes permettant de gérer les DAGs."""
 
-    render_section_header(
+    render_layout_section_header(
         "⚙️",
         "Contrôle des DAGs",
         "Déclenchement manuel et gestion de la planification Airflow."
@@ -547,7 +348,6 @@ def render_dag_control_section() -> None:
 
     try:
         dags = load_checkit_dags()
-
     except Exception as error:
         logger.warning(
             "Impossible de charger les DAGs CheckIt.AI : %s",
@@ -619,46 +419,53 @@ def render_selected_dag_status(
     latest_run = load_latest_dag_run(dag_id)
     is_paused = bool(dag.get("is_paused"))
 
-    render_metric_cards([
-        (
-            "DAG",
-            format_dag_name(dag_id)
-        ),
-        (
-            "Planification",
-            "🟠 En pause" if is_paused else "🟢 Actif"
-        ),
-        (
-            "Dernier run",
-            format_status(
-                latest_run.get("state")
-                if latest_run
-                else "unknown"
-            )
-        )
-    ], columns_count=3)
-
-    if latest_run:
-        with st.expander("Dernière exécution"):
-            render_information_block([
-                (
-                    "Run ID",
-                    latest_run.get("dag_run_id", "inconnu")
-                ),
-                (
-                    "Début",
-                    format_datetime(latest_run.get("start_date"))
-                ),
-                (
-                    "Fin",
-                    format_datetime(latest_run.get("end_date"))
+    render_metric_cards(
+        [
+            (
+                "DAG",
+                format_dag_name(dag_id)
+            ),
+            (
+                "Planification",
+                "🟠 En pause" if is_paused else "🟢 Actif"
+            ),
+            (
+                "Dernier run",
+                format_status(
+                    latest_run.get("state")
+                    if latest_run
+                    else "unknown"
                 )
-            ])
+            )
+        ],
+        columns_count=3
+    )
 
-            st.json(latest_run)
+    if not latest_run:
+        return
+
+    with st.expander("Dernière exécution"):
+        render_information_rows([
+            (
+                "Run ID",
+                latest_run.get("dag_run_id", "inconnu")
+            ),
+            (
+                "Début",
+                format_datetime(latest_run.get("start_date"))
+            ),
+            (
+                "Fin",
+                format_datetime(latest_run.get("end_date"))
+            )
+        ])
+
+        st.json(latest_run)
 
 
-def render_dag_trigger_form(dag_id: str) -> None:
+def render_dag_trigger_form(
+    dag_id: str
+) -> None:
     """Affiche le formulaire de déclenchement d'un DAG."""
 
     st.subheader("▶️ Déclencher")
@@ -666,12 +473,13 @@ def render_dag_trigger_form(dag_id: str) -> None:
     is_dangerous = dag_id in DANGEROUS_DAGS
 
     if is_dangerous:
-        st.markdown(
-            '<div class="checkit-danger-card">'
-            '⚠️ Ce DAG peut modifier ou supprimer des données. '
-            'Une confirmation explicite est obligatoire.'
-            '</div>',
-            unsafe_allow_html=True
+        render_notice(
+            (
+                "Ce DAG peut modifier ou supprimer des données. "
+                "Une confirmation explicite est obligatoire."
+            ),
+            notice_type="danger",
+            title="Action sensible"
         )
 
     with st.form(
@@ -728,18 +536,16 @@ def render_dag_trigger_form(dag_id: str) -> None:
 def parse_configuration(
     configuration_text: str
 ) -> dict[str, Any] | None:
-    """Valide la configuration JSON saisie par l'utilisateur."""
+    """Valide la configuration JSON saisie."""
 
     normalized_text = configuration_text.strip() or "{}"
 
     try:
         configuration = json.loads(normalized_text)
-
     except json.JSONDecodeError as error:
         st.error(
             "La configuration saisie n'est pas un JSON valide."
         )
-
         st.code(str(error))
         return None
 
@@ -774,7 +580,9 @@ def trigger_selected_dag(
         run_id = result.get("dag_run_id")
 
         if run_id:
-            st.write(f"**Run ID :** `{run_id}`")
+            st.write(
+                f"**Run ID :** `{run_id}`"
+            )
 
         with st.expander("Réponse Airflow"):
             st.json(result)
@@ -822,12 +630,13 @@ def render_dag_pause_controls(
     is_paused = bool(dag.get("is_paused"))
 
     if is_paused:
-        st.markdown(
-            '<div class="checkit-danger-card">'
-            'Le DAG est actuellement en pause. '
-            'Il ne sera pas déclenché automatiquement.'
-            '</div>',
-            unsafe_allow_html=True
+        render_notice(
+            (
+                "Le DAG est actuellement en pause. "
+                "Il ne sera pas déclenché automatiquement."
+            ),
+            notice_type="danger",
+            title="Planification suspendue"
         )
 
         if st.button(
@@ -842,12 +651,13 @@ def render_dag_pause_controls(
 
         return
 
-    st.markdown(
-        '<div class="checkit-safe-card">'
-        'Le DAG est actif et peut être planifié '
-        'ou déclenché normalement.'
-        '</div>',
-        unsafe_allow_html=True
+    render_notice(
+        (
+            "Le DAG est actif et peut être planifié "
+            "ou déclenché normalement."
+        ),
+        notice_type="success",
+        title="Planification active"
     )
 
     confirmation = st.checkbox(
@@ -875,13 +685,12 @@ def update_dag_pause_state(
     """Modifie l'état de pause d'un DAG."""
 
     try:
-        with st.spinner(
-            "Mise à jour du DAG..."
-        ):
-            if is_paused:
-                result = pause_dag(dag_id)
-            else:
-                result = unpause_dag(dag_id)
+        with st.spinner("Mise à jour du DAG..."):
+            result = (
+                pause_dag(dag_id)
+                if is_paused
+                else unpause_dag(dag_id)
+            )
 
         action = (
             "mis en pause"
@@ -914,14 +723,12 @@ def update_dag_pause_state(
             st.code(str(error))
 
 
-# ============================================================================
 # Consultation PostgreSQL
-# ============================================================================
 
 def render_database_section() -> None:
     """Affiche les informations et aperçus PostgreSQL."""
 
-    render_section_header(
+    render_layout_section_header(
         "🗄️",
         "Consultation PostgreSQL",
         "Volumes des tables et aperçu sécurisé des données stockées."
@@ -929,7 +736,6 @@ def render_database_section() -> None:
 
     try:
         database_information = load_database_information()
-
     except Exception as error:
         logger.warning(
             "Impossible de charger les informations PostgreSQL : %s",
@@ -954,7 +760,7 @@ def render_table_counts(
 ) -> None:
     """Affiche le nombre de lignes des tables."""
 
-    render_section_header(
+    render_layout_section_header(
         "📦",
         "Contenu des tables",
         "Nombre de lignes actuellement présentes dans chaque table."
@@ -968,7 +774,10 @@ def render_table_counts(
 
     metrics = [
         (
-            table_name.replace("_", " ").capitalize(),
+            table_name.replace(
+                "_",
+                " "
+            ).capitalize(),
             format_number(counts[table_name])
         )
         for table_name in sorted(counts)
@@ -976,14 +785,17 @@ def render_table_counts(
 
     render_metric_cards(
         metrics,
-        columns_count=min(4, max(1, len(metrics)))
+        columns_count=min(
+            4,
+            max(1, len(metrics))
+        )
     )
 
 
 def render_table_browser() -> None:
     """Affiche un aperçu sécurisé d'une table autorisée."""
 
-    render_section_header(
+    render_layout_section_header(
         "🔎",
         "Explorateur de tables",
         "Aperçu en lecture seule des tables autorisées."
@@ -991,10 +803,16 @@ def render_table_browser() -> None:
 
     table_names = sorted(ALLOWED_TABLES)
 
-    with st.container(border=True):
-        first_column, second_column = st.columns([3, 1])
+    if not table_names:
+        st.info(
+            "Aucune table n'est autorisée à la consultation."
+        )
+        return
 
-        with first_column:
+    with st.container(border=True):
+        table_column, limit_column = st.columns([3, 1])
+
+        with table_column:
             selected_table = st.selectbox(
                 "Table",
                 options=table_names,
@@ -1006,7 +824,7 @@ def render_table_browser() -> None:
                 key="administration_table"
             )
 
-        with second_column:
+        with limit_column:
             limit = st.number_input(
                 "Nombre de lignes",
                 min_value=10,
@@ -1021,7 +839,6 @@ def render_table_browser() -> None:
             selected_table,
             int(limit)
         )
-
     except Exception as error:
         logger.warning(
             "Impossible de consulter la table %s : %s",
@@ -1058,63 +875,57 @@ def render_table_browser() -> None:
     )
 
 
-# ============================================================================
 # Maintenance
-# ============================================================================
 
 def render_maintenance_section() -> None:
     """Affiche les informations relatives à la maintenance."""
 
-    render_section_header(
+    render_layout_section_header(
         "🧹",
         "Maintenance",
         "Opérations techniques encadrées par les DAGs Airflow."
     )
 
-    st.info(
-        "Le dashboard ne supprime directement aucune donnée. "
-        "Les opérations sensibles passent par Airflow afin de conserver "
-        "les validations, les journaux et la traçabilité."
+    render_notice(
+        (
+            "Le dashboard ne supprime directement aucune donnée. "
+            "Les opérations sensibles passent par Airflow afin de "
+            "conserver les validations, les journaux et la traçabilité."
+        ),
+        notice_type="info",
+        title="Principe de sécurité"
     )
 
-    first_column, second_column = st.columns(2)
+    cleanup_column, database_column = st.columns(2)
 
-    with first_column:
-        st.markdown(
-            '<div class="checkit-maintenance-card">'
-            '<div class="checkit-maintenance-title">'
-            '🧹 Nettoyage des lots'
-            '</div>'
-            '<div class="checkit-maintenance-text">'
-            'Le DAG <code>checkit_cleanup_dag</code> gère le nettoyage '
-            'contrôlé des fichiers intermédiaires.<br><br>'
-            'Son déclenchement nécessite une confirmation explicite '
-            'depuis la section de contrôle des DAGs.'
-            '</div>'
-            '</div>',
-            unsafe_allow_html=True
+    with cleanup_column:
+        render_content_card(
+            icon="🧹",
+            title="Nettoyage des lots",
+            text=(
+                "Le DAG <code>checkit_cleanup_dag</code> gère le "
+                "nettoyage contrôlé des fichiers intermédiaires.<br><br>"
+                "Son déclenchement nécessite une confirmation explicite "
+                "depuis la section de contrôle des DAGs."
+            ),
+            allow_html=True
         )
 
-    with second_column:
-        st.markdown(
-            '<div class="checkit-maintenance-card">'
-            '<div class="checkit-maintenance-title">'
-            '🗄️ Initialisation PostgreSQL'
-            '</div>'
-            '<div class="checkit-maintenance-text">'
-            'Le DAG <code>checkit_database_setup</code> prépare la '
-            'structure PostgreSQL utilisée par CheckIt.AI.<br><br>'
-            'Cette opération doit rester exceptionnelle sur une base '
-            'contenant déjà des données.'
-            '</div>'
-            '</div>',
-            unsafe_allow_html=True
+    with database_column:
+        render_content_card(
+            icon="🗄️",
+            title="Initialisation PostgreSQL",
+            text=(
+                "Le DAG <code>checkit_database_setup</code> prépare la "
+                "structure PostgreSQL utilisée par CheckIt.AI.<br><br>"
+                "Cette opération doit rester exceptionnelle sur une "
+                "base contenant déjà des données."
+            ),
+            allow_html=True
         )
 
 
-# ============================================================================
 # Actualisation
-# ============================================================================
 
 def clear_administration_cache() -> None:
     """Supprime le cache utilisé par la page."""
@@ -1128,14 +939,12 @@ def clear_administration_cache() -> None:
     load_table_preview.clear()
 
 
-# ============================================================================
-# Page complète
-# ============================================================================
+# Page
 
 def render_administration_page() -> None:
     """Affiche la page d'administration complète."""
 
-    render_administration_style()
+    apply_dashboard_layout(accent="orange")
     render_header()
 
     services_tab, dags_tab, database_tab, maintenance_tab = st.tabs([

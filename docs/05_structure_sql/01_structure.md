@@ -50,6 +50,7 @@ erDiagram
         INTEGER images_downloaded_count
         INTEGER images_valid_count
         INTEGER images_invalid_count
+        INTEGER images_pending_count
         NUMERIC peak_memory_mb
         NUMERIC average_cpu_percent
         TEXT error_message

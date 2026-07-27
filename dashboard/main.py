@@ -1,15 +1,10 @@
 """Point d'entrée du dashboard CheckIt.AI.
 
-Ce module initialise l'application Streamlit et gère :
-
-- la configuration générale de la page ;
-- l'application du style commun ;
-- la navigation fournie par la sidebar ;
-- l'affichage de la page sélectionnée ;
-- la gestion globale des erreurs d'affichage.
+Ce module initialise l'application Streamlit, affiche la sidebar
+et charge la page sélectionnée par l'utilisateur.
 
 La logique métier reste placée dans les services.
-Le contenu des écrans reste placé dans les modules du dossier pages.
+Le contenu des écrans reste placé dans les modules du dashboard.
 """
 
 from __future__ import annotations
@@ -21,44 +16,45 @@ from pathlib import Path
 import streamlit as st
 
 
-# ============================================================================
-# Chemins du projet
-# ============================================================================
+# Chemins
 
 DASHBOARD_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = DASHBOARD_DIR.parent
 
-if str(PROJECT_DIR) not in sys.path:
-    sys.path.insert(0, str(PROJECT_DIR))
+project_path = str(PROJECT_DIR)
+
+if project_path not in sys.path:
+    sys.path.insert(0, project_path)
 
 
-# ============================================================================
-# Imports du dashboard
-# ============================================================================
+# Imports internes
 
-from dashboard.dashbord_sidebar import (
+from dashboard.dashboard.dashboard_administration import render_administration_page
+from dashboard.dashboard.dashboard_data import render_data_page
+from dashboard.dashboard.dashboard_pipeline import render_pipeline_page
+from dashboard.dashboard.dashboard_sidebar import (
     PAGE_ADMINISTRATION,
     PAGE_DATA,
     PAGE_PIPELINE,
-    get_services_status,
+    load_services_status,
     render_sidebar
 )
-from dashboard.dashbord_administration import render_administration_page
-from dashboard.dashbord_data import render_data_page
-from dashboard.dashbord_pipeline import render_pipeline_page
 from src.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-# ============================================================================
 # Configuration
-# ============================================================================
 
 APP_TITLE = "CheckIt.AI"
 APP_ICON = "🔎"
 APP_LAYOUT = "wide"
 SIDEBAR_STATE = "expanded"
+
+SERVICE_LABELS = {
+    "postgres": "PostgreSQL",
+    "airflow": "Airflow"
+}
 
 PAGE_RENDERERS: dict[str, Callable[[], None]] = {
     PAGE_PIPELINE: render_pipeline_page,
@@ -67,9 +63,7 @@ PAGE_RENDERERS: dict[str, Callable[[], None]] = {
 }
 
 
-# ============================================================================
-# Configuration de la page
-# ============================================================================
+# Page Streamlit
 
 def configure_page() -> None:
     """Configure la fenêtre principale Streamlit."""
@@ -81,17 +75,20 @@ def configure_page() -> None:
         initial_sidebar_state=SIDEBAR_STATE
     )
 
-    # Masque la navigation automatique générée par dashboard/pages.
-    st.set_option("client.showSidebarNavigation", False)
+    st.set_option(
+        "client.showSidebarNavigation",
+        False
+    )
 
 
 def apply_dashboard_style() -> None:
-    """Applique les styles communs au dashboard."""
+    """Applique le style général du dashboard."""
 
     st.markdown(
         """
         <style>
             .block-container {
+                max-width: 1500px;
                 padding-top: 1.5rem;
                 padding-bottom: 2rem;
             }
@@ -104,32 +101,18 @@ def apply_dashboard_style() -> None:
                 padding-top: 1.5rem;
             }
 
-            .checkit-sidebar-header {
-                margin-bottom: 1.25rem;
+            [data-testid="stMetric"] {
+                padding: 0.8rem;
+                border: 1px solid rgba(128, 128, 128, 0.2);
+                border-radius: 0.75rem;
             }
 
-            .checkit-sidebar-title {
-                font-size: 1.65rem;
-                font-weight: 700;
-                margin-bottom: 0;
+            [data-testid="stAlert"] {
+                border-radius: 0.75rem;
             }
 
-            .checkit-sidebar-subtitle {
-                color: #808495;
-                font-size: 0.9rem;
-                margin-top: 0;
-            }
-
-            .checkit-service-row {
-                display: flex;
-                justify-content: space-between;
-                gap: 1rem;
-                margin-bottom: 0.4rem;
-            }
-
-            .checkit-muted {
-                color: #808495;
-                font-size: 0.85rem;
+            .stButton > button {
+                border-radius: 0.6rem;
             }
         </style>
         """,
@@ -137,43 +120,55 @@ def apply_dashboard_style() -> None:
     )
 
 
-# ============================================================================
-# Affichage
-# ============================================================================
+# Services
 
-def render_service_warning() -> None:
-    """Informe l'utilisateur lorsqu'un service est indisponible."""
+def get_unavailable_services(
+    services_status: dict[str, bool]
+) -> list[str]:
+    """Retourne les noms des services indisponibles."""
 
-    services = get_services_status()
-
-    service_labels = {
-        "postgres": "PostgreSQL",
-        "airflow": "Airflow"
-    }
-
-    unavailable_services = [
-        service_labels.get(service_name, service_name)
-        for service_name, available in services.items()
+    return [
+        SERVICE_LABELS.get(service_name, service_name)
+        for service_name, available in services_status.items()
         if not available
     ]
+
+
+def render_service_warning() -> None:
+    """Signale les services actuellement indisponibles."""
+
+    services_status = load_services_status()
+    unavailable_services = get_unavailable_services(
+        services_status
+    )
 
     if not unavailable_services:
         return
 
+    service_names = ", ".join(unavailable_services)
+
     st.warning(
-        "Service(s) indisponible(s) : "
-        f"{', '.join(unavailable_services)}. "
+        f"Service(s) indisponible(s) : {service_names}. "
         "Certaines informations peuvent ne pas être affichées."
     )
 
 
+# Navigation
+
 def render_page(page_name: str) -> None:
-    """Affiche la page associée à la navigation."""
+    """Affiche la page sélectionnée dans la sidebar."""
 
     renderer = PAGE_RENDERERS.get(page_name)
 
     if renderer is None:
-        st.error("La page demandée n'existe pas.")
+        logger.warning(
+            "Page inconnue demandée dans le dashboard : %s.",
+            page_name
+        )
+
+        st.error(
+            "La page demandée n'existe pas."
+        )
         return
 
     try:
@@ -191,12 +186,13 @@ def render_page(page_name: str) -> None:
         )
 
         with st.expander("Détail technique"):
-            st.code(str(error))
+            st.code(
+                str(error),
+                language="text"
+            )
 
 
-# ============================================================================
 # Application
-# ============================================================================
 
 def main() -> None:
     """Lance le dashboard CheckIt.AI."""
