@@ -34,7 +34,7 @@ from src.extractors.core.extractor_results import ExtractorResult
 
 from src.logger import get_logger
 
-from src.article.article_cleaner import clean_text
+from src.article.processing.article_cleaner import clean_text
 from src.utils.date_utils import convert_date_to_iso
 from src.utils.url_utils import is_valid_http_url
 from src.utils.value_utils import normalize_value

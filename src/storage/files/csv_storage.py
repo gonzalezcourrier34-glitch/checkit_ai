@@ -22,7 +22,7 @@ from config.paths import PROCESSED_DATA_DIR
 from src.article.schema.article_schema import STANDARD_ARTICLE_FIELDS
 from src.article.schema.article_schema_normalizer import normalize_articles_schema
 
-from src.article.article_deduplicator import deduplicate_articles
+from src.article.processing.article_deduplicator import deduplicate_articles
 from src.logger import get_logger
 from src.utils.date_utils import get_current_datetime
 from src.utils.path_utils import normalize_source_name
@@ -121,14 +121,14 @@ def serialize_complex_value(value: Any) -> Any:
     if isinstance(value, np.bool_):
         return bool(value)
 
+    if isinstance(value, Decimal):
+        return float(value)
+
     if isinstance(value, Path):
         return str(value)
 
     if isinstance(value, (datetime, date, pd.Timestamp)):
         return value.isoformat()
-
-    if isinstance(value, (Decimal, np.number)):
-        return value.item()
 
     if isinstance(value, Mapping):
         return {
@@ -137,24 +137,47 @@ def serialize_complex_value(value: Any) -> Any:
         }
 
     if isinstance(value, (set, frozenset)):
-        items = [serialize_complex_value(item) for item in value]
+        items = [
+            serialize_complex_value(item)
+            for item in value
+        ]
+
         try:
-            return sorted(items, key=lambda item: json.dumps(item, sort_keys=True, ensure_ascii=False))
+            return sorted(
+                items,
+                key=lambda item: json.dumps(
+                    item,
+                    sort_keys=True,
+                    ensure_ascii=False
+                )
+            )
         except (TypeError, ValueError):
             return items
 
-    if isinstance(value, (list, tuple, np.ndarray, pd.Series, pd.Index)):
-        items = value.tolist() if hasattr(value, "tolist") else list(value)
-        return [serialize_complex_value(item) for item in items]
+    if isinstance(
+        value,
+        (list, tuple, np.ndarray, pd.Series, pd.Index)
+    ):
+        items = (
+            value.tolist()
+            if hasattr(value, "tolist")
+            else list(value)
+        )
 
-    if hasattr(value, "item"):
+        return [
+            serialize_complex_value(item)
+            for item in items
+        ]
+
+    item_method = getattr(value, "item", None)
+
+    if callable(item_method):
         try:
-            return serialize_complex_value(value.item())
-        except (TypeError, ValueError):
+            return serialize_complex_value(item_method())
+        except (TypeError, ValueError, AttributeError):
             pass
 
     return str(value)
-
 
 def serialize_csv_value(value: Any) -> str:
     """Sérialise explicitement une valeur dans une cellule CSV."""
@@ -455,10 +478,27 @@ def load_articles(source: str | None = None) -> list[dict[str, Any]]:
     """Charge et déduplique les articles enregistrés dans les CSV."""
 
     if source:
-        directory = PROCESSED_DATA_DIR / normalize_source_name(source)
-        filepaths = sorted(directory.glob("*.csv")) if directory.exists() else []
+        directory = (
+            PROCESSED_DATA_DIR
+            / normalize_source_name(source)
+        )
+
+        filepaths = (
+            sorted(
+                directory.glob("*.csv"),
+                key=lambda filepath: filepath.name
+            )
+            if directory.exists()
+            else []
+        )
     else:
-        filepaths = sorted(PROCESSED_DATA_DIR.rglob("*.csv"))
+        filepaths = sorted(
+            PROCESSED_DATA_DIR.rglob("*.csv"),
+            key=lambda filepath: (
+                filepath.name,
+                filepath.as_posix()
+            )
+        )
 
     articles: list[dict[str, Any]] = []
 
@@ -467,7 +507,16 @@ def load_articles(source: str | None = None) -> list[dict[str, Any]]:
 
         if result.status == "valid":
             articles.extend(result.articles)
-        elif result.status == "corrupted":
-            logger.warning("CSV corrompu ignoré : %s (%s)", filepath, result.error)
 
-    return deduplicate_articles(articles) if articles else []
+        elif result.status == "corrupted":
+            logger.warning(
+                "CSV corrompu ignoré : %s (%s)",
+                filepath,
+                result.error
+            )
+
+    return (
+        deduplicate_articles(articles)
+        if articles
+        else []
+    )

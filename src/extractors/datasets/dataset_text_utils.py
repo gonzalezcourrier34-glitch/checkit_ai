@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from src.article.article_cleaner import clean_text
+from src.article.processing.article_cleaner import clean_text
 from src.utils.extractor_utils import get_value, normalize_value
 from src.utils.url_utils import is_valid_http_url
 

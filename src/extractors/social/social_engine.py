@@ -11,7 +11,7 @@ from config.constants import SOURCE_TYPE_SOCIAL
 from config.environment import get_secret
 from config.paths import SOURCES_FILE
 from config.source_config import load_validated_source
-from src.article.article_deduplicator import (
+from src.article.processing.article_deduplicator import (
     is_duplicate_article,
     register_article
 )

@@ -20,7 +20,7 @@ from collections.abc import Iterator, Mapping
 from typing import Any
 
 from config.paths import SOURCES_FILE
-from src.article.article_cleaner import clean_text
+from src.article.processing.article_cleaner import clean_text
 from src.article.fact_check_labels import classify_fact_check_label
 from src.extractors.apis.api_adapter import ApiAdapter
 from src.extractors.apis.api_extractor import (

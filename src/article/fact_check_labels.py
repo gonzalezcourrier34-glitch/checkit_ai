@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from typing import Any
 from unicodedata import combining, normalize
 
-from src.article.article_cleaner import clean_text
+from src.article.processing.article_cleaner import clean_text
 
 from src.logger import get_logger
 
@@ -553,13 +553,17 @@ def normalize_fact_check_text(value: Any) -> str:
         if not combining(character)
     )
 
-    # Remplace la ponctuation par des espaces afin de ne pas fusionner
-    # accidentellement deux mots.
-    text = re.sub(r"[\[\]{}()<>|/\\:;,.!?\"*_+=~#@]", " ", text)
+    # Remplace la ponctuation par des espaces sans supprimer
+    # les apostrophes utiles aux marqueurs comme "n'a jamais dit".
+    text = re.sub(
+        r"[\[\]{}()<>|/\\:;,.!?\"*_+=~#@-]",
+        " ",
+        text
+    )
+
     text = re.sub(r"\s+", " ", text).strip(" -_'")
 
     return remove_rating_prefix(text)
-
 
 def remove_rating_prefix(value: str) -> str:
     """Retire un éventuel préfixe comme 'Verdict :' ou 'Rating :'."""
@@ -764,7 +768,12 @@ def get_fact_check_label(value: Any) -> str:
 def is_valid_fact_check_label(value: Any) -> bool:
     """Vérifie qu'une valeur est un label fact-checking standard."""
 
-    return normalize_fact_check_text(value) in FACT_CHECK_LABELS
+    normalized_value = normalize_fact_check_text(value).replace(
+        " ",
+        "_"
+    )
+
+    return normalized_value in FACT_CHECK_LABELS
 
 
 def normalize_existing_fact_check_label(value: Any) -> str:

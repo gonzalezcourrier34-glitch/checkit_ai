@@ -27,7 +27,7 @@ from src.extractors.datasets.dataset_text_utils import (
 from src.extractors.core.extractor_results import ExtractorResult
 from src.utils.value_utils import normalize_value
 from src.utils.parsing_utils import parse_optional_float
-from src.article.article_cleaner import clean_text
+from src.article.processing.article_cleaner import clean_text
 from src.article.fact_check_labels import classify_fact_check_label
 
 from src.utils.extractor_utils import (
@@ -269,9 +269,11 @@ def validate_fakeddit_row(
 
     if not isinstance(row, Mapping):
         return False, "ligne_fakeddit_invalide"
+    label = normalize_fakeddit_label(row)
 
-    if not normalize_fakeddit_label(row):
+    if not label or label == "not_classified":
         return False, "label_fakeddit_invalide"
+    
     if not get_dataset_text(row, FAKEDDIT_TEXT_FIELDS, FAKEDDIT_TITLE_FIELDS):
         return False, "contenu_fakeddit_absent"
 

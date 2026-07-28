@@ -11,7 +11,7 @@ from typing import Any
 
 from dateutil import parser as date_parser
 
-from src.article.article_cleaner import normalize_value
+from src.article.processing.article_cleaner import normalize_value
 from src.utils.value_utils import is_missing_value
 
 YEAR_PATTERN = re.compile(r"^\d{4}$")

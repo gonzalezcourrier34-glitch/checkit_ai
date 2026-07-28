@@ -44,7 +44,7 @@ from config.settings import (
     MAX_RETRIES,
     RETRY_DELAY_SECONDS    
 )
-from src.article.article_cleaner import clean_text
+from src.article.processing.article_cleaner import clean_text
 from src.utils.date_utils import convert_date_to_iso
 from src.utils.value_utils import normalize_value
 from src.utils.parsing_utils import (

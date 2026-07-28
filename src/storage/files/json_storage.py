@@ -20,7 +20,7 @@ import pandas as pd
 from config.paths import RAW_DATA_DIR
 
 from src.article.schema.article_schema_normalizer import normalize_articles_schema
-from src.article.article_deduplicator import deduplicate_articles
+from src.article.processing.article_deduplicator import deduplicate_articles
 
 from src.logger import get_logger
 from src.utils.date_utils import get_current_datetime
@@ -126,7 +126,10 @@ def serialize_json_value(value: Any) -> Any:
     if isinstance(value, (datetime, date, pd.Timestamp)):
         return value.isoformat()
 
-    if isinstance(value, (Decimal, np.number)):
+    if isinstance(value, Decimal):
+        return float(value)
+
+    if isinstance(value, np.number):
         return value.item()
 
     if isinstance(value, Mapping):

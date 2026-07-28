@@ -39,7 +39,7 @@ from src.extractors.apis.api_extractor import (
     validate_api_secret
 )
 from src.extractors.core.extractor_results import ExtractorResult
-from src.article.article_cleaner import clean_text 
+from src.article.processing.article_cleaner import clean_text 
 from src.utils.url_utils import is_valid_http_url
 from src.utils.value_utils import normalize_value
 from src.utils.parsing_utils import parse_non_negative_integer

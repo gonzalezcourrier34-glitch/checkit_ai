@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from src.article.article_cleaner import normalize_value
+from src.article.processing.article_cleaner import normalize_value
 from src.images.image_utils import ImageMetadata, inspect_image
 from src.images.image_validator import resolve_image_path
 from src.logger import get_logger

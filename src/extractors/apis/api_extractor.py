@@ -62,7 +62,7 @@ from config.settings import (
 )
 
 from src.article.validation.article_validator import validate_article_with_reason
-from src.article.article_deduplicator import (
+from src.article.processing.article_deduplicator import (
     is_duplicate_article,
     register_article
 )

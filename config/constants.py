@@ -142,6 +142,11 @@ RSS_MAINTENANCE_STATUS_CODES = frozenset({
     504,
 })
 
+RSS_ERROR_SERVER = "server_error"
+RSS_SERVER_ERROR_STATUS_CODES = frozenset({
+    500
+})
+
 # Motifs robots.txt
 ROBOTS_REASON_ALLOWED = "allowed"
 ROBOTS_REASON_DENIED = "robots_denied"

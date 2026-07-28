@@ -25,7 +25,7 @@ from src.extractors.datasets.dataset_text_utils import (
 )
 from src.utils.value_utils import normalize_value
 from src.extractors.core.extractor_results import ExtractorResult
-from src.article.article_cleaner import clean_text
+from src.article.processing.article_cleaner import clean_text
 
 from src.utils.extractor_utils import (
     build_standard_article,

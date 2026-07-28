@@ -74,7 +74,7 @@ from config.settings import (
     RETRY_DELAY_SECONDS,
     USER_AGENT
 )
-from src.article.article_cleaner import normalize_value
+from src.article.processing.article_cleaner import normalize_value
 from src.images.image_utils import (
     ImageMetadata,
     inspect_image,

@@ -21,7 +21,7 @@ from config.settings import (
     REQUEST_TIMEOUT,
     RETRY_DELAY_SECONDS
 )
-from src.article.article_cleaner import clean_text
+from src.article.processing.article_cleaner import clean_text
 from src.logger import get_logger
 from src.robot.robots_utils import (
     is_url_allowed_by_robots,

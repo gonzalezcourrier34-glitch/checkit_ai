@@ -10,7 +10,7 @@ from config.settings import (
     MIN_TITLE_LENGTH,
     MIN_TOTAL_TEXT_LENGTH
 )
-from src.article.article_transformer import normalize_label
+from src.article.processing.article_transformer import normalize_label
 from src.utils.parsing_utils import parse_boolean, parse_non_negative_integer
 
 # Politique par défaut

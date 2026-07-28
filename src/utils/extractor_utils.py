@@ -7,10 +7,10 @@ from collections import Counter
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from src.article.article_cleaner import (
+from src.article.processing.article_cleaner import (
     normalize_value
 )
-from src.article.article_transformer import (
+from src.article.processing.article_transformer import (
     normalize_dataset_role,
     normalize_label
 )

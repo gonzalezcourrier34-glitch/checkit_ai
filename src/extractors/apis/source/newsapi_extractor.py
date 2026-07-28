@@ -20,7 +20,7 @@ from itertools import product
 from typing import Any
 
 from config.paths import SOURCES_FILE
-from src.article.article_cleaner import clean_text
+from src.article.processing.article_cleaner import clean_text
 from src.extractors.apis.api_adapter import ApiAdapter
 from src.extractors.apis.api_extractor import (
     ApiAuthenticationError,

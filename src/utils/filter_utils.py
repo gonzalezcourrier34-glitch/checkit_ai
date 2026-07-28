@@ -12,8 +12,8 @@ from config.settings import (
     MIN_TITLE_LENGTH,
     MIN_TOTAL_TEXT_LENGTH
 )
-from src.article.article_cleaner import normalize_value
-from src.article.article_transformer import normalize_label
+from src.article.processing.article_cleaner import normalize_value
+from src.article.processing.article_transformer import normalize_label
 from src.logger import get_logger
 from src.utils.parsing_utils import (
     parse_boolean,

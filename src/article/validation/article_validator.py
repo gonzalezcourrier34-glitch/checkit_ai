@@ -7,7 +7,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from src.article.schema.article_schema import STANDARD_ARTICLE_FIELDS
-from src.article.article_transformer import normalize_label
+from src.article.processing.article_transformer import normalize_label
 from src.article.article_utils import (
     get_article_identifier,
     get_article_text,

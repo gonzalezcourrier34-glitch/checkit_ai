@@ -18,7 +18,7 @@ from src.article.schema.article_schema import STANDARD_ARTICLE_FIELDS
 from src.article.preparation.article_preparation_models import ArticlePreparationReport
 from src.article.preparation.article_preparation_profiles import PreparationPolicyName
 from src.article.preparation.article_preparation import prepare_articles
-from src.article.article_transformer import transform_articles
+from src.article.processing.article_transformer import transform_articles
 from src.article.validation.article_validator import validate_article_with_reason
 from src.article.article_utils import get_article_identifier
 

@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup, Tag
 from soupsieve import SelectorSyntaxError
 
 from src.logger import get_logger
-from src.article.article_cleaner import clean_text 
+from src.article.processing.article_cleaner import clean_text 
 
 from src.utils.extractor_utils import convert_date_to_iso, normalize_value
 

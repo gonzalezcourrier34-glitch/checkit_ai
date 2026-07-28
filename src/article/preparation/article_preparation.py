@@ -6,8 +6,8 @@ from collections import Counter, defaultdict
 from collections.abc import Mapping
 from typing import Any
 
-from src.article.article_cleaner import clean_articles
-from src.article.article_deduplicator import deduplicate_articles
+from src.article.processing.article_cleaner import clean_articles
+from src.article.processing.article_deduplicator import deduplicate_articles
 from src.article.preparation.article_preparation_models import (
     ArticlePreparationReport,
     ArticlePreparationResult

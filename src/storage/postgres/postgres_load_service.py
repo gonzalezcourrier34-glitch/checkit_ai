@@ -86,6 +86,93 @@ def resolve_image_count(
     )
 
 
+# Métadonnées du pipeline
+
+def build_run_metadata(
+    pipeline_metadata: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Prépare les métadonnées complémentaires du pipeline."""
+
+    raw_metadata = pipeline_metadata.get(
+        "run_metadata",
+        {}
+    )
+
+    run_metadata = (
+        dict(raw_metadata)
+        if isinstance(raw_metadata, Mapping)
+        else {}
+    )
+
+    return {
+        "duplicate_count": parse_non_negative_integer(
+            pipeline_metadata.get(
+                "duplicate_count",
+                0
+            )
+        ),
+        **run_metadata
+    }
+
+
+# Gestion des erreurs
+
+def rollback_connection(
+    connection: Connection,
+    error: Exception
+) -> None:
+    """Annule la transaction et ajoute le détail en cas d'échec."""
+
+    try:
+        connection.rollback()
+
+    except Exception as rollback_error:
+        error.add_note(
+            f"Rollback PostgreSQL échoué : {rollback_error}"
+        )
+
+
+def finalize_failed_pipeline_run(
+    connection: Connection,
+    *,
+    pipeline_run_id: UUID,
+    duration_seconds: float,
+    images_downloaded_count: int,
+    images_valid_count: int,
+    images_invalid_count: int,
+    images_pending_count: int,
+    error: Exception
+) -> None:
+    """Finalise un pipeline en échec dans une nouvelle transaction."""
+
+    try:
+        finalize_pipeline_run(
+            connection,
+            pipeline_run_id=pipeline_run_id,
+            status="failed",
+            loaded_count=0,
+            load_duration_seconds=duration_seconds,
+            images_downloaded_count=images_downloaded_count,
+            images_valid_count=images_valid_count,
+            images_invalid_count=images_invalid_count,
+            images_pending_count=images_pending_count,
+            error_message=str(error)
+        )
+        connection.commit()
+
+    except Exception as finalization_error:
+        try:
+            connection.rollback()
+
+        except Exception:
+            pass
+
+        error.add_note(
+            "La finalisation du pipeline_run a échoué : "
+            f"{finalization_error}"
+        )
+
+
 # Chargement du lot
 
 def load_batch_to_postgres(
@@ -176,20 +263,9 @@ def load_batch_to_postgres(
             images_valid_count=images_valid_count,
             images_invalid_count=images_invalid_count,
             images_pending_count=images_pending_count,
-            run_metadata={
-                "duplicate_count": parse_non_negative_integer(
-                    pipeline_metadata.get(
-                        "duplicate_count",
-                        0
-                    )
-                ),
-                **dict(
-                    pipeline_metadata.get(
-                        "run_metadata",
-                        {}
-                    )
-                )
-            }
+            run_metadata=build_run_metadata(
+                pipeline_metadata
+            )
         )
 
         load_result = load_transformed_payload(
@@ -200,8 +276,6 @@ def load_batch_to_postgres(
             features=features,
             pipeline_run_id=pipeline_run_id
         )
-
-        connection.commit()
 
         duration_seconds = round(
             perf_counter() - started_at,
@@ -219,6 +293,8 @@ def load_batch_to_postgres(
             images_invalid_count=images_invalid_count,
             images_pending_count=images_pending_count
         )
+
+        connection.commit()
 
         logger.info(
             "Lot PostgreSQL chargé : %s article(s), "
@@ -243,13 +319,10 @@ def load_batch_to_postgres(
         }
 
     except Exception as error:
-        try:
-            connection.rollback()
-
-        except Exception as rollback_error:
-            error.add_note(
-                f"Rollback PostgreSQL échoué : {rollback_error}"
-            )
+        rollback_connection(
+            connection,
+            error
+        )
 
         duration_seconds = round(
             perf_counter() - started_at,
@@ -257,31 +330,16 @@ def load_batch_to_postgres(
         )
 
         if pipeline_run_id is not None:
-            try:
-                finalize_pipeline_run(
-                    connection,
-                    pipeline_run_id=pipeline_run_id,
-                    status="failed",
-                    loaded_count=0,
-                    load_duration_seconds=duration_seconds,
-                    images_downloaded_count=images_downloaded_count,
-                    images_valid_count=images_valid_count,
-                    images_invalid_count=images_invalid_count,
-                    images_pending_count=images_pending_count,
-                    error_message=str(error)
-                )
-
-            except Exception as finalization_error:
-                try:
-                    connection.rollback()
-
-                except Exception:
-                    pass
-
-                error.add_note(
-                    "La finalisation du pipeline_run a échoué : "
-                    f"{finalization_error}"
-                )
+            finalize_failed_pipeline_run(
+                connection,
+                pipeline_run_id=pipeline_run_id,
+                duration_seconds=duration_seconds,
+                images_downloaded_count=images_downloaded_count,
+                images_valid_count=images_valid_count,
+                images_invalid_count=images_invalid_count,
+                images_pending_count=images_pending_count,
+                error=error
+            )
 
         else:
             logger.exception(

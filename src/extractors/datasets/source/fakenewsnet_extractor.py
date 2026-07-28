@@ -283,7 +283,14 @@ def extract_category_from_path(filepath: Path) -> str:
 def classify_fakenewsnet_label(value: Any):
     """Normalise un label FakeNewsNet avec le moteur commun."""
 
-    return classify_fact_check_label(value)
+    normalized_value = normalize_value(value).lower()
+
+    if normalized_value == "fake":
+        normalized_value = "false"
+    elif normalized_value == "real":
+        normalized_value = "true"
+
+    return classify_fact_check_label(normalized_value)
 
 
 def get_fakenewsnet_label(value: Any) -> str:
@@ -585,7 +592,7 @@ def enrich_fakenewsnet_article_label(
 
     label_result = classify_fakenewsnet_label(raw_label)
 
-    article["dataset_label_raw"] = label_result.raw_value
+    article["dataset_label_raw"] = normalize_value(raw_label).lower()
     article["dataset_label_normalized"] = label_result.normalized_value
     article["dataset_label_reason"] = label_result.reason
     article["dataset_label_match"] = label_result.matched_value

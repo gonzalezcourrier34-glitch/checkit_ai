@@ -28,11 +28,13 @@ from config.constants import (
     RSS_ERROR_TIMEOUT,
     RSS_MAINTENANCE_STATUS_CODES,
     RSS_RATE_LIMIT_STATUS_CODES,
+    RSS_ERROR_SERVER,
+    RSS_SERVER_ERROR_STATUS_CODES,
     SOURCE_TYPE_RSS
 )
 from config.paths import SOURCES_FILE
 from config.source_config import SourceRegistry, load_source_registry
-from src.article.article_deduplicator import is_duplicate_article, register_article
+from src.article.processing.article_deduplicator import is_duplicate_article, register_article
 from src.extractors.core.extractor_results import ExtractorResult
 from src.extractors.core.extractor_service import execute_configured_sources_extractor
 from src.extractors.rss.rss_adapter import (
@@ -120,6 +122,11 @@ class RssParsingError(RssExtractionStoppedError):
     error_code = RSS_ERROR_PARSING
 
 
+class RssServerError(RssExtractionStoppedError):
+    """Signale une erreur interne du serveur RSS."""
+
+    error_code = RSS_ERROR_SERVER
+    
 class RssRequestError(RuntimeError):
     """Signale l'échec non fatal d'une requête RSS isolée."""
 
@@ -224,7 +231,8 @@ def raise_if_fatal_rss_error(
         raise RssRateLimitError(source_name, reason, status_code) from None
     if status_code in RSS_MAINTENANCE_STATUS_CODES:
         raise RssMaintenanceError(source_name, reason, status_code) from None
-
+    if status_code in RSS_SERVER_ERROR_STATUS_CODES:
+        raise RssServerError(source_name, reason, status_code) from None
     return reason
 
 

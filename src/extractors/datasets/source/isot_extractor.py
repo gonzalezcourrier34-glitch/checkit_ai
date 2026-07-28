@@ -26,7 +26,7 @@ from src.extractors.datasets.dataset_text_utils import (
 from config.paths import SOURCES_FILE
 from src.logger import get_logger
 from src.extractors.core.extractor_results import ExtractorResult
-from src.article.article_cleaner import clean_text
+from src.article.processing.article_cleaner import clean_text
 from src.article.fact_check_labels import classify_fact_check_label
 from src.utils.extractor_utils import (
     build_standard_article,
@@ -148,7 +148,14 @@ def get_isot_label_from_file(dataset_file: Path) -> str:
 def classify_isot_label(value: Any):
     """Normalise un label ISOT avec le moteur commun."""
 
-    return classify_fact_check_label(value)
+    normalized_value = normalize_value(value).lower()
+
+    if normalized_value == "fake":
+        normalized_value = "false"
+    elif normalized_value == "real":
+        normalized_value = "true"
+
+    return classify_fact_check_label(normalized_value)
 
 
 def get_isot_label(value: Any) -> str:
@@ -294,7 +301,7 @@ def build_isot_article(
         dataset_role=normalize_value(source.get("role")) or "labeled_reference"
     )
 
-    article["dataset_label_raw"] = label_result.raw_value
+    article["dataset_label_raw"] = normalize_value(raw_label).lower()
     article["dataset_label_normalized"] = label_result.normalized_value
     article["dataset_label_reason"] = label_result.reason
     article["dataset_label_match"] = label_result.matched_value
@@ -317,22 +324,29 @@ def validate_isot_item(
 
     label_result = classify_isot_label(item.get("_label"))
 
-    if not label_result.label:
-        return False, "label_isot_invalide"
-
-    if label_result.label == "not_classified":
+    if (
+        not label_result.label
+        or label_result.label == "not_classified"
+    ):
         return False, "label_isot_invalide"
 
     if not normalize_value(item.get("_source_file")):
         return False, "fichier_source_absent"
 
-    if not get_dataset_title(item, ISOT_TITLE_FIELDS):
+    if not get_dataset_title(
+        item,
+        ISOT_TITLE_FIELDS
+    ):
         return False, "titre_isot_absent"
-    if not get_dataset_text(item, ISOT_TEXT_FIELDS, ISOT_TITLE_FIELDS):
+
+    if not get_dataset_text(
+        item,
+        ISOT_TEXT_FIELDS,
+        ()
+    ):
         return False, "texte_isot_absent"
 
     return True, ""
-
 
 # Adaptateur et extracteur ISOT
 
