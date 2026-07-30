@@ -1,28 +1,60 @@
 site_name: CheckIt.AI
 site_description: Pipeline d'acquisition de données multimodales pour la détection de fake news
 site_author: Stéphane Gonzalez
+site_url: https://gonzalezcourrier34-glitch.github.io/checkit_ai/
+
+repo_name: gonzalezcourrier34-glitch/checkit_ai
+repo_url: https://github.com/gonzalezcourrier34-glitch/checkit_ai
+
+edit_uri: edit/main/docs/
 
 theme:
   name: material
   language: fr
+
   features:
-    - navigation.tabs
     - navigation.sections
+    - navigation.expand
     - navigation.top
+    - toc.follow
     - search.highlight
+    - search.suggest
     - content.code.copy
     - content.tabs.link
+
+  palette:
+    - scheme: default
+      primary: blue
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Activer le mode sombre
+
+    - scheme: slate
+      primary: blue
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Activer le mode clair
+        
+plugins:
+  - search
 
 extra_javascript:
   - https://unpkg.com/mermaid@11/dist/mermaid.min.js
 
 markdown_extensions:
   - admonition
+  - attr_list
   - tables
+
   - toc:
       permalink: true
+
   - pymdownx.details
   - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
@@ -30,6 +62,7 @@ markdown_extensions:
           format: !!python/name:pymdownx.superfences.fence_code_format
 
 nav:
+
   - Accueil: index.md
 
   - 1. Exploration des sources de données:
