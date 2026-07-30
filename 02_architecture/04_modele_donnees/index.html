@@ -1,0 +1,3665 @@
+
+<!doctype html>
+<html lang="fr" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Pipeline d'acquisition de données multimodales pour la détection de fake news">
+      
+      
+        <meta name="author" content="Stéphane Gonzalez">
+      
+      
+      
+        <link rel="prev" href="../03_extracteurs/">
+      
+      
+        <link rel="next" href="../05_choix/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Modèle de données - CheckIt.AI</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#modele-de-donnees" class="md-skip">
+          Aller au contenu
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="En-tête">
+    <a href="../.." title="CheckIt.AI" class="md-header__button md-logo" aria-label="CheckIt.AI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CheckIt.AI
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Modèle de données
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Rechercher" placeholder="Rechercher" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Recherche">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Effacer" aria-label="Effacer" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initialisation de la recherche
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Onglets" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Accueil
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../01_exploration_sources/" class="md-tabs__link">
+          
+  
+  
+  1. Exploration des sources de données
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+  2. Architecture du projet
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../03_pipeline/" class="md-tabs__link">
+          
+  
+  
+  3. Pipeline d'acquisition
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../04_schemas/" class="md-tabs__link">
+          
+  
+  
+  4. Schémas des données
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../05_structure_sql/" class="md-tabs__link">
+          
+  
+  
+  5. Structure de la base PostgreSQL
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../06_dag/" class="md-tabs__link">
+          
+  
+  
+  6. Orchestration avec Apache Airflow
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../07_resultats/" class="md-tabs__link">
+          
+  
+  
+  7. Résultats
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../08_monitoring/" class="md-tabs__link">
+          
+  
+  
+  8. Monitoring
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="CheckIt.AI" class="md-nav__button md-logo" aria-label="CheckIt.AI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    CheckIt.AI
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accueil
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1. Exploration des sources de données
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    1. Exploration des sources de données
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/01_contexte/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contexte du projet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/02_besoins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Besoins fonctionnels
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/03_fake/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cas typiques de fake news multimodales
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/04_criteres/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Critères d'évaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/05_panorama/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Panorama des sources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/06_datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Jeux de données académiques
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/07_apis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API d'actualité
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/08_flux_rss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Flux RSS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/09_reseaux/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Réseaux sociaux
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/10_comparaison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparaison des sources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/11_recommandations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Recommandations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/12_droits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Droits d'utilisation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/13_extraction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Méthodes d'extraction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/14_format_sortie/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Format des données produites
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Architecture du projet
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    2. Architecture du projet
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture générale
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../02_article/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modèle d'un article
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03_extracteurs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture des extracteurs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modèle de données
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modèle de données
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table des matières">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table des matières
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#objectif" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objectif
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#principes-de-conception" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Principes de conception
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schema-commun-dun-article" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schéma commun d’un article
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#role-des-publications" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rôle des publications
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#donnees-raw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Données RAW
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#donnees-processed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Données PROCESSED
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#caracteristiques-textuelles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caractéristiques textuelles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#caracteristiques-temporelles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caractéristiques temporelles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metadonnees-des-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Métadonnées des images
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#informations-de-transformation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Informations de transformation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#organisation-des-fichiers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Organisation des fichiers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#formats-de-stockage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Formats de stockage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modele-relationnel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Modèle relationnel
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#association-entre-les-donnees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Association entre les données
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#validation-du-modele" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validation du modèle
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tracabilite-des-transformations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Traçabilité des transformations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conclusion
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../05_choix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Choix techniques
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../06_gestion_erreurs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gestion des erreurs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. Pipeline d'acquisition
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    3. Pipeline d'acquisition
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../03_pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../03_pipeline/01_fonctionnement/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fonctionnement général
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../03_pipeline/02_reproductibilite/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reproductibilité des traitements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../03_pipeline/03_execution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exécution du pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../03_pipeline/04_schema_pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schéma global du pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. Schémas des données
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    4. Schémas des données
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../04_schemas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../04_schemas/01_article/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structure d'un article
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../04_schemas/02_configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structures de configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../04_schemas/03_adaptateurs_extracteurs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adaptateurs des extracteurs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../04_schemas/04_contextes_resultats/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contextes et résultats d'exécution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5. Structure de la base PostgreSQL
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    5. Structure de la base PostgreSQL
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../05_structure_sql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../05_structure_sql/01_structure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structure générale
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../05_structure_sql/02_tables/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tables relationnelles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../05_structure_sql/03_indexs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../05_structure_sql/04_views/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vues SQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../05_structure_sql/05_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fonctions et procédures stockées
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../05_structure_sql/06_security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sécurité de la base
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    6. Orchestration avec Apache Airflow
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    6. Orchestration avec Apache Airflow
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../06_dag/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../06_dag/01_master/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DAG maître
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../06_dag/02_extract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DAG d'extraction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../06_dag/03_transform/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DAG de transformation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../06_dag/04_load/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DAG de chargement
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../06_dag/05_quality/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DAG de contrôle qualité
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../06_dag/06_communication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Communication entre les DAGs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../06_dag/07_error_handling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gestion des erreurs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../06_dag/08_execution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exécution complète du pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    7. Résultats
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    7. Résultats
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../07_resultats/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../07_resultats/01_pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exécution du pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../07_resultats/02_base_postgresql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Résultats dans PostgreSQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../07_resultats/03_dashboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dashboard de supervision
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../07_resultats/04_limites/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Limites du projet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../07_resultats/05_perspectives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Perspectives d'évolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    8. Monitoring
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    8. Monitoring
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../08_monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../08_monitoring/01_objectifs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Objectifs du monitoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../08_monitoring/02_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture de supervision
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../08_monitoring/03_kpi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Indicateurs de suivi (KPI)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../08_monitoring/04_outils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Outils de supervision
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../08_monitoring/05_alertes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gestion des alertes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../08_monitoring/06_incidents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gestion des incidents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../08_monitoring/07_perspectives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Perspectives d'évolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table des matières">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table des matières
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#objectif" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objectif
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#principes-de-conception" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Principes de conception
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schema-commun-dun-article" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schéma commun d’un article
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#role-des-publications" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rôle des publications
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#donnees-raw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Données RAW
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#donnees-processed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Données PROCESSED
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#caracteristiques-textuelles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caractéristiques textuelles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#caracteristiques-temporelles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caractéristiques temporelles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metadonnees-des-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Métadonnées des images
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#informations-de-transformation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Informations de transformation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#organisation-des-fichiers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Organisation des fichiers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#formats-de-stockage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Formats de stockage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modele-relationnel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Modèle relationnel
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#association-entre-les-donnees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Association entre les données
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#validation-du-modele" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validation du modèle
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tracabilite-des-transformations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Traçabilité des transformations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conclusion
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="modele-de-donnees">Modèle de données<a class="headerlink" href="#modele-de-donnees" title="Permanent link">&para;</a></h1>
+<h2 id="objectif">Objectif<a class="headerlink" href="#objectif" title="Permanent link">&para;</a></h2>
+<p>Dans cette section, je présente le modèle de données utilisé dans <strong>CheckIt.AI</strong>.</p>
+<p>Les publications collectées proviennent de sources différentes, comme les flux RSS, les API, les réseaux sociaux, les sites de fact-checking ou les datasets académiques. Ces sources ne fournissent pas toutes les mêmes champs ni les mêmes formats.</p>
+<p>J’ai donc défini une structure commune afin de pouvoir appliquer les mêmes étapes de préparation, de validation, de transformation et de stockage à l’ensemble des publications.</p>
+<p>Le pipeline distingue deux niveaux de données :</p>
+<ul>
+<li>les données <strong>RAW</strong>, qui correspondent aux publications produites par les extracteurs ;</li>
+<li>les données <strong>PROCESSED</strong>, qui correspondent aux publications préparées, transformées, enrichies et validées.</li>
+</ul>
+<p>Cette séparation me permet de conserver les données extraites et de rejouer le pipeline de transformation sans devoir interroger une nouvelle fois les sources distantes.</p>
+<hr />
+<h2 id="principes-de-conception">Principes de conception<a class="headerlink" href="#principes-de-conception" title="Permanent link">&para;</a></h2>
+<p>Pour construire le modèle de données, je me suis appuyé sur plusieurs principes :</p>
+<ul>
+<li>utiliser un schéma commun quelle que soit la source ;</li>
+<li>conserver l’association entre le texte, l’image et les métadonnées ;</li>
+<li>accepter que certains champs facultatifs soient absents ;</li>
+<li>séparer les données extraites des données transformées ;</li>
+<li>conserver les informations nécessaires à la traçabilité ;</li>
+<li>enrichir les publications avec des caractéristiques calculées ;</li>
+<li>permettre la réexécution des transformations à partir des données déjà collectées.</li>
+</ul>
+<hr />
+<h2 id="schema-commun-dun-article">Schéma commun d’un article<a class="headerlink" href="#schema-commun-dun-article" title="Permanent link">&para;</a></h2>
+<p>Les données provenant des différentes sources sont converties vers un schéma standard.</p>
+<p>Ce schéma constitue le format d’échange commun entre les extracteurs, le pipeline de transformation et les composants de stockage.</p>
+<table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Type conceptuel</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>Texte</td>
+<td>Identifiant de l’article.</td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td>Texte</td>
+<td>Nom de la source ayant fourni la publication.</td>
+</tr>
+<tr>
+<td><code>title</code></td>
+<td>Texte</td>
+<td>Titre de la publication.</td>
+</tr>
+<tr>
+<td><code>text</code></td>
+<td>Texte</td>
+<td>Contenu textuel principal.</td>
+</tr>
+<tr>
+<td><code>image_url</code></td>
+<td>URL</td>
+<td>Adresse distante de l’image associée.</td>
+</tr>
+<tr>
+<td><code>image_path</code></td>
+<td>Chemin</td>
+<td>Chemin local de l’image téléchargée.</td>
+</tr>
+<tr>
+<td><code>image_download_status</code></td>
+<td>Texte</td>
+<td>Résultat du téléchargement de l’image.</td>
+</tr>
+<tr>
+<td><code>image_download_error</code></td>
+<td>Texte</td>
+<td>Description de l’erreur rencontrée pendant le téléchargement.</td>
+</tr>
+<tr>
+<td><code>published_at</code></td>
+<td>Date</td>
+<td>Date de publication fournie par la source.</td>
+</tr>
+<tr>
+<td><code>url</code></td>
+<td>URL</td>
+<td>Adresse originale de la publication.</td>
+</tr>
+<tr>
+<td><code>author</code></td>
+<td>Texte</td>
+<td>Auteur de la publication lorsqu’il est disponible.</td>
+</tr>
+<tr>
+<td><code>language</code></td>
+<td>Texte</td>
+<td>Langue de la publication.</td>
+</tr>
+<tr>
+<td><code>category</code></td>
+<td>Texte</td>
+<td>Catégorie ou thématique associée.</td>
+</tr>
+<tr>
+<td><code>label</code></td>
+<td>Texte</td>
+<td>Label fourni par une source ou un dataset annoté.</td>
+</tr>
+<tr>
+<td><code>dataset_role</code></td>
+<td>Texte</td>
+<td>Rôle de la publication dans le projet.</td>
+</tr>
+<tr>
+<td><code>extraction_date</code></td>
+<td>Date</td>
+<td>Date à laquelle la publication a été extraite.</td>
+</tr>
+</tbody>
+</table>
+<p>Tous les champs ne sont pas obligatoires pour toutes les sources.</p>
+<p>Par exemple, une publication provenant d’un dataset annoté peut posséder un label mais aucune URL publique. À l’inverse, un article d’actualité récent peut posséder une URL mais aucun label de véracité.</p>
+<p>Les règles appliquées dépendent donc du rôle de la publication et de la politique de préparation utilisée.</p>
+<hr />
+<h2 id="role-des-publications">Rôle des publications<a class="headerlink" href="#role-des-publications" title="Permanent link">&para;</a></h2>
+<p>Le champ <code>dataset_role</code> me permet de différencier l’utilisation prévue des publications.</p>
+<p>Les principaux rôles utilisés dans le projet sont :</p>
+<table>
+<thead>
+<tr>
+<th>Rôle</th>
+<th>Utilisation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>acquisition</code></td>
+<td>Article d’actualité collecté depuis une source distante.</td>
+</tr>
+<tr>
+<td><code>fact_checking</code></td>
+<td>Publication provenant d’un organisme de vérification.</td>
+</tr>
+<tr>
+<td><code>labeled_reference</code></td>
+<td>Donnée possédant un label exploitable pour l’apprentissage supervisé.</td>
+</tr>
+<tr>
+<td><code>multimodal_reference</code></td>
+<td>Donnée de référence contenant du texte et une image.</td>
+</tr>
+<tr>
+<td><code>claim_reference</code></td>
+<td>Allégation accompagnée d’une évaluation de fact-checking.</td>
+</tr>
+<tr>
+<td><code>social_reference</code></td>
+<td>Publication issue d’un réseau social.</td>
+</tr>
+</tbody>
+</table>
+<p>Cette information permet au pipeline de choisir une politique de préparation adaptée.</p>
+<p>Dans le pipeline de transformation, les articles sont notamment préparés selon les profils suivants :</p>
+<ul>
+<li><code>acquisition</code> ;</li>
+<li><code>labeled_reference</code> ;</li>
+<li><code>multimodal_reference</code>.</li>
+</ul>
+<hr />
+<h2 id="donnees-raw">Données RAW<a class="headerlink" href="#donnees-raw" title="Permanent link">&para;</a></h2>
+<p>Les données RAW correspondent aux publications produites après l’extraction.</p>
+<p>Elles utilisent déjà le schéma commun de CheckIt.AI, mais elles n’ont pas encore suivi l’ensemble du pipeline de transformation.</p>
+<p>Elles peuvent encore contenir :</p>
+<ul>
+<li>des valeurs textuelles non homogènes ;</li>
+<li>des espaces inutiles ;</li>
+<li>des dates provenant de formats différents ;</li>
+<li>des catégories ou des langues écrites de plusieurs manières ;</li>
+<li>des labels propres à une source ;</li>
+<li>des doublons ;</li>
+<li>des champs facultatifs absents ;</li>
+<li>des images non téléchargées ou invalides.</li>
+</ul>
+<p>Les données RAW sont conservées afin de disposer d’un état intermédiaire réutilisable.</p>
+<pre class="mermaid"><code>flowchart LR
+    A[Source distante] --&gt; B[Extracteur]
+    B --&gt; C[Adaptation au schéma commun]
+    C --&gt; D[Validation minimale]
+    D --&gt; E[Données RAW]</code></pre>
+<hr />
+<h2 id="donnees-processed">Données PROCESSED<a class="headerlink" href="#donnees-processed" title="Permanent link">&para;</a></h2>
+<p>Les données PROCESSED correspondent aux publications obtenues après l’exécution du pipeline de transformation.</p>
+<p>Le pipeline applique successivement :</p>
+<ul>
+<li>la préparation des articles ;</li>
+<li>la normalisation ;</li>
+<li>le nettoyage ;</li>
+<li>la déduplication ;</li>
+<li>les transformations métier ;</li>
+<li>la génération des caractéristiques ;</li>
+<li>la validation finale.</li>
+</ul>
+<p>Les publications conservées contiennent les données d’origine normalisées ainsi que des informations supplémentaires produites pendant la transformation.</p>
+<pre class="mermaid"><code>flowchart LR
+    A[Données RAW] --&gt; B[Préparation par rôle]
+    B --&gt; C[Normalisation]
+    C --&gt; D[Nettoyage]
+    D --&gt; E[Déduplication]
+    E --&gt; F[Transformation métier]
+    F --&gt; G[Enrichissement]
+    G --&gt; H[Validation finale]
+    H --&gt; I[Données PROCESSED]</code></pre>
+<hr />
+<h2 id="caracteristiques-textuelles">Caractéristiques textuelles<a class="headerlink" href="#caracteristiques-textuelles" title="Permanent link">&para;</a></h2>
+<p>Le pipeline génère des caractéristiques à partir du titre et du contenu des publications.</p>
+<p>Ces valeurs permettent de décrire simplement la quantité de texte disponible.</p>
+<table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>title_length</code></td>
+<td>Nombre de caractères présents dans le titre.</td>
+</tr>
+<tr>
+<td><code>text_length</code></td>
+<td>Nombre de caractères présents dans le contenu.</td>
+</tr>
+<tr>
+<td><code>title_word_count</code></td>
+<td>Nombre de mots présents dans le titre.</td>
+</tr>
+<tr>
+<td><code>text_word_count</code></td>
+<td>Nombre de mots présents dans le contenu.</td>
+</tr>
+</tbody>
+</table>
+<p>Ces caractéristiques pourront être utilisées pour les contrôles de qualité, les analyses exploratoires et les futurs traitements d’intelligence artificielle.</p>
+<hr />
+<h2 id="caracteristiques-temporelles">Caractéristiques temporelles<a class="headerlink" href="#caracteristiques-temporelles" title="Permanent link">&para;</a></h2>
+<p>La date de publication peut être utilisée pour produire des informations temporelles complémentaires.</p>
+<p>Le projet exploite notamment l’heure de publication lorsqu’une date valide est disponible.</p>
+<table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>publication_hour</code></td>
+<td>Heure de publication extraite depuis la date normalisée.</td>
+</tr>
+</tbody>
+</table>
+<p>La date originale normalisée reste conservée dans le champ <code>published_at</code>.</p>
+<hr />
+<h2 id="metadonnees-des-images">Métadonnées des images<a class="headerlink" href="#metadonnees-des-images" title="Permanent link">&para;</a></h2>
+<p>Lorsqu’une image est disponible et téléchargée, le pipeline peut enregistrer plusieurs informations techniques.</p>
+<table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>image_format</code></td>
+<td>Format réel de l’image.</td>
+</tr>
+<tr>
+<td><code>image_width</code></td>
+<td>Largeur de l’image en pixels.</td>
+</tr>
+<tr>
+<td><code>image_height</code></td>
+<td>Hauteur de l’image en pixels.</td>
+</tr>
+<tr>
+<td><code>image_mode</code></td>
+<td>Mode de couleur de l’image.</td>
+</tr>
+<tr>
+<td><code>animated</code></td>
+<td>Indique si l’image contient plusieurs images ou animations.</td>
+</tr>
+<tr>
+<td><code>frame_count</code></td>
+<td>Nombre d’images composant le fichier.</td>
+</tr>
+<tr>
+<td><code>file_size</code></td>
+<td>Taille du fichier image.</td>
+</tr>
+</tbody>
+</table>
+<p>Ces métadonnées permettent de vérifier qu’une image est exploitable avant son utilisation dans de futurs traitements multimodaux.</p>
+<p>L’état du téléchargement est également conservé dans les champs :</p>
+<ul>
+<li><code>image_download_status</code> ;</li>
+<li><code>image_download_error</code>.</li>
+</ul>
+<hr />
+<h2 id="informations-de-transformation">Informations de transformation<a class="headerlink" href="#informations-de-transformation" title="Permanent link">&para;</a></h2>
+<p>Le pipeline ajoute des informations permettant d’identifier la transformation appliquée aux données.</p>
+<table>
+<thead>
+<tr>
+<th>Champ</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>transformation_date</code></td>
+<td>Date d’exécution de la transformation.</td>
+</tr>
+<tr>
+<td><code>transformation_version</code></td>
+<td>Version du pipeline ayant produit le résultat.</td>
+</tr>
+<tr>
+<td><code>data_quality_status</code></td>
+<td>Statut obtenu après la validation finale.</td>
+</tr>
+<tr>
+<td><code>rejection_reason</code></td>
+<td>Motif de rejet lorsqu’un article ne respecte pas les règles attendues.</td>
+</tr>
+</tbody>
+</table>
+<p>La version du pipeline est enregistrée afin de pouvoir identifier les règles utilisées pour produire un fichier transformé.</p>
+<hr />
+<h2 id="organisation-des-fichiers">Organisation des fichiers<a class="headerlink" href="#organisation-des-fichiers" title="Permanent link">&para;</a></h2>
+<p>Les fichiers produits sont séparés selon leur niveau de traitement.</p>
+<div class="highlight"><pre><span></span><code>data/
+├── datasets/
+│
+├── raw/
+│
+├── processed/
+│   ├── transformed/
+│   │   ├── articles_transformed_*.json
+│   │   └── articles_transformed_*.csv
+│   │
+│   └── reports/
+│       └── transformation_report_*.json
+│
+└── images/
+</code></pre></div>
+<p>Le dossier <code>raw</code> contient les données issues de l’extraction.</p>
+<p>Le dossier <code>processed/transformed</code> contient les publications ayant terminé le pipeline de transformation.</p>
+<p>Le dossier <code>processed/reports</code> contient les rapports produits pendant les exécutions.</p>
+<p>Le dossier <code>images</code> contient les fichiers téléchargés lorsqu’une publication possède une image exploitable.</p>
+<hr />
+<h2 id="formats-de-stockage">Formats de stockage<a class="headerlink" href="#formats-de-stockage" title="Permanent link">&para;</a></h2>
+<p>Le pipeline produit actuellement des fichiers JSON et CSV.</p>
+<table>
+<thead>
+<tr>
+<th>Format</th>
+<th>Utilisation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>JSON</strong></td>
+<td>Conservation structurée des publications et échanges entre les étapes du pipeline.</td>
+</tr>
+<tr>
+<td><strong>CSV</strong></td>
+<td>Consultation, export et analyse des données sous forme tabulaire.</td>
+</tr>
+<tr>
+<td><strong>PostgreSQL</strong></td>
+<td>Stockage relationnel final des articles et des données associées.</td>
+</tr>
+</tbody>
+</table>
+<p>Le format JSON est adapté aux échanges internes, car il conserve facilement les différents champs d’une publication.</p>
+<p>Le format CSV facilite l’ouverture des données dans un tableur ou leur chargement avec pandas.</p>
+<p>PostgreSQL permet ensuite de stocker les données de manière structurée et d’établir des relations entre les articles, les images, les labels, les caractéristiques et les exécutions du pipeline.</p>
+<hr />
+<h2 id="modele-relationnel">Modèle relationnel<a class="headerlink" href="#modele-relationnel" title="Permanent link">&para;</a></h2>
+<p>Après leur transformation, les données sont chargées dans plusieurs tables PostgreSQL.</p>
+<pre class="mermaid"><code>erDiagram
+    SOURCES ||--o{ ARTICLES : fournit
+    PIPELINE_RUNS ||--o{ ARTICLES : charge
+    ARTICLES ||--o{ IMAGES : possède
+    ARTICLES ||--o{ ARTICLE_LABELS : reçoit
+    ARTICLES ||--o{ ARTICLE_FEATURES : possède
+
+    SOURCES {
+        int id
+        string name
+        string source_type
+    }
+
+    PIPELINE_RUNS {
+        int id
+        string batch_id
+        string status
+    }
+
+    ARTICLES {
+        int id
+        string article_identifier
+        string title
+        string text
+        string url
+        datetime published_at
+    }
+
+    IMAGES {
+        int id
+        int article_id
+        string image_path
+        string image_format
+    }
+
+    ARTICLE_LABELS {
+        int id
+        int article_id
+        string label
+    }
+
+    ARTICLE_FEATURES {
+        int id
+        int article_id
+        int image_id
+        string feature_name
+        string feature_value
+    }</code></pre>
+<p>Ce schéma représente les principales relations utilisées dans le projet.</p>
+<p>Un article peut être associé à :</p>
+<ul>
+<li>une source ;</li>
+<li>une exécution du pipeline ;</li>
+<li>une ou plusieurs informations liées aux images ;</li>
+<li>des labels ;</li>
+<li>des caractéristiques calculées.</li>
+</ul>
+<p>Certaines caractéristiques concernent uniquement l’article. Dans ce cas, leur <code>image_id</code> peut rester vide.</p>
+<hr />
+<h2 id="association-entre-les-donnees">Association entre les données<a class="headerlink" href="#association-entre-les-donnees" title="Permanent link">&para;</a></h2>
+<p>Chaque article reste l’élément central du modèle.</p>
+<pre class="mermaid"><code>flowchart TD
+    A[Article] --&gt; B[Contenu textuel]
+    A --&gt; C[Image]
+    A --&gt; D[Métadonnées]
+    A --&gt; E[Label]
+    A --&gt; F[Caractéristiques]
+
+    D --&gt; D1[Source]
+    D --&gt; D2[Auteur]
+    D --&gt; D3[Langue]
+    D --&gt; D4[Catégorie]
+    D --&gt; D5[Date]</code></pre>
+<p>Cette organisation me permet de conserver le lien entre les différentes composantes d’une publication tout au long du pipeline.</p>
+<p>L’identifiant de l’article est utilisé pour retrouver les données associées pendant le chargement en base.</p>
+<hr />
+<h2 id="validation-du-modele">Validation du modèle<a class="headerlink" href="#validation-du-modele" title="Permanent link">&para;</a></h2>
+<p>Les articles sont contrôlés à plusieurs étapes du pipeline.</p>
+<p>Les règles appliquées dépendent de leur profil de préparation et de leur rôle.</p>
+<p>Les contrôles peuvent notamment concerner :</p>
+<ul>
+<li>la présence du titre ;</li>
+<li>la longueur minimale du titre ;</li>
+<li>la présence d’un texte exploitable ;</li>
+<li>la longueur totale du contenu ;</li>
+<li>la présence d’une URL lorsque celle-ci est obligatoire ;</li>
+<li>la présence d’un label pour les datasets annotés ;</li>
+<li>la présence d’une image pour les données multimodales ;</li>
+<li>le rejet des contenus supprimés ;</li>
+<li>la détection des doublons ;</li>
+<li>la validité de l’image téléchargée.</li>
+</ul>
+<p>Lorsque la validation finale réussit, le champ <code>data_quality_status</code> reçoit la valeur <code>valid</code>.</p>
+<p>Lorsqu’un article est rejeté, le motif est comptabilisé dans le rapport de transformation.</p>
+<hr />
+<h2 id="tracabilite-des-transformations">Traçabilité des transformations<a class="headerlink" href="#tracabilite-des-transformations" title="Permanent link">&para;</a></h2>
+<p>Chaque exécution du pipeline produit un rapport contenant notamment :</p>
+<ul>
+<li>le statut de l’exécution ;</li>
+<li>la version du pipeline ;</li>
+<li>les dates de début et de fin ;</li>
+<li>la durée du traitement ;</li>
+<li>le nombre d’articles chargés ;</li>
+<li>le nombre d’articles préparés ;</li>
+<li>le nombre de doublons ;</li>
+<li>le nombre d’articles invalides ;</li>
+<li>le nombre d’articles valides ;</li>
+<li>les motifs de rejet ;</li>
+<li>les fichiers exportés ;</li>
+<li>l’erreur éventuelle.</li>
+</ul>
+<p>Ces informations me permettent de comprendre ce qui s’est passé pendant une exécution et de comparer plusieurs transformations.</p>
+<hr />
+<h2 id="conclusion">Conclusion<a class="headerlink" href="#conclusion" title="Permanent link">&para;</a></h2>
+<p>Le modèle de données constitue le contrat commun entre les différents composants de <strong>CheckIt.AI</strong>.</p>
+<p>Le schéma standard permet de traiter de la même manière des publications provenant de sources très différentes.</p>
+<p>La séparation entre les données <strong>RAW</strong> et <strong>PROCESSED</strong> me permet de conserver les données extraites tout en produisant une version normalisée, enrichie et validée.</p>
+<p>Enfin, le stockage dans PostgreSQL permet de conserver les relations entre les articles, les images, les labels, les caractéristiques et les exécutions du pipeline.</p>
+<p>Cette organisation prépare l’exploitation future des données pour des traitements de classification, d’analyse textuelle et d’analyse multimodale.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Retour en haut de la page
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "search.highlight", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copi\u00e9 dans le presse-papier", "clipboard.copy": "Copier dans le presse-papier", "search.result.more.one": "1 de plus sur cette page", "search.result.more.other": "# de plus sur cette page", "search.result.none": "Aucun document trouv\u00e9", "search.result.one": "1 document trouv\u00e9", "search.result.other": "# documents trouv\u00e9s", "search.result.placeholder": "Taper pour d\u00e9marrer la recherche", "search.result.term.missing": "Non trouv\u00e9", "select.version": "S\u00e9lectionner la version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="https://unpkg.com/mermaid@11/dist/mermaid.min.js"></script>
+      
+    
+  </body>
+</html>

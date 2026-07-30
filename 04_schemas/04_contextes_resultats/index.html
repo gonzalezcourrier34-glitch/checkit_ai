@@ -1,0 +1,3221 @@
+
+<!doctype html>
+<html lang="fr" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Pipeline d'acquisition de données multimodales pour la détection de fake news">
+      
+      
+        <meta name="author" content="Stéphane Gonzalez">
+      
+      
+      
+        <link rel="prev" href="../03_adaptateurs_extracteurs/">
+      
+      
+        <link rel="next" href="../../05_structure_sql/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Contextes et résultats d'exécution - CheckIt.AI</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#contextes-dexecution-et-resultats" class="md-skip">
+          Aller au contenu
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="En-tête">
+    <a href="../.." title="CheckIt.AI" class="md-header__button md-logo" aria-label="CheckIt.AI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CheckIt.AI
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Contextes et résultats d'exécution
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Rechercher" placeholder="Rechercher" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Recherche">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Effacer" aria-label="Effacer" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initialisation de la recherche
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Onglets" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Accueil
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../01_exploration_sources/" class="md-tabs__link">
+          
+  
+  
+  1. Exploration des sources de données
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../02_architecture/" class="md-tabs__link">
+          
+  
+  
+  2. Architecture du projet
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../03_pipeline/" class="md-tabs__link">
+          
+  
+  
+  3. Pipeline d'acquisition
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+  4. Schémas des données
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../05_structure_sql/" class="md-tabs__link">
+          
+  
+  
+  5. Structure de la base PostgreSQL
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../06_dag/" class="md-tabs__link">
+          
+  
+  
+  6. Orchestration avec Apache Airflow
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../07_resultats/" class="md-tabs__link">
+          
+  
+  
+  7. Résultats
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../08_monitoring/" class="md-tabs__link">
+          
+  
+  
+  8. Monitoring
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="CheckIt.AI" class="md-nav__button md-logo" aria-label="CheckIt.AI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    CheckIt.AI
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accueil
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1. Exploration des sources de données
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    1. Exploration des sources de données
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/01_contexte/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contexte du projet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/02_besoins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Besoins fonctionnels
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/03_fake/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cas typiques de fake news multimodales
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/04_criteres/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Critères d'évaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/05_panorama/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Panorama des sources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/06_datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Jeux de données académiques
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/07_apis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API d'actualité
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/08_flux_rss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Flux RSS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/09_reseaux/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Réseaux sociaux
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/10_comparaison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparaison des sources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/11_recommandations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Recommandations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/12_droits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Droits d'utilisation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/13_extraction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Méthodes d'extraction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_exploration_sources/14_format_sortie/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Format des données produites
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Architecture du projet
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    2. Architecture du projet
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../02_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../02_architecture/01_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture générale
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../02_architecture/02_article/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modèle d'un article
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../02_architecture/03_extracteurs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture des extracteurs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../02_architecture/04_modele_donnees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modèle de données
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../02_architecture/05_choix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Choix techniques
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../02_architecture/06_gestion_erreurs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gestion des erreurs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. Pipeline d'acquisition
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    3. Pipeline d'acquisition
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../03_pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../03_pipeline/01_fonctionnement/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fonctionnement général
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../03_pipeline/02_reproductibilite/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reproductibilité des traitements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../03_pipeline/03_execution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exécution du pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../03_pipeline/04_schema_pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schéma global du pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. Schémas des données
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    4. Schémas des données
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01_article/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structure d'un article
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../02_configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structures de configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03_adaptateurs_extracteurs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adaptateurs des extracteurs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contextes et résultats d'exécution
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contextes et résultats d'exécution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table des matières">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table des matières
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#presentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Présentation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5. Structure de la base PostgreSQL
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    5. Structure de la base PostgreSQL
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../05_structure_sql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../05_structure_sql/01_structure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structure générale
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../05_structure_sql/02_tables/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tables relationnelles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../05_structure_sql/03_indexs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../05_structure_sql/04_views/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vues SQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../05_structure_sql/05_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fonctions et procédures stockées
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../05_structure_sql/06_security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sécurité de la base
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    6. Orchestration avec Apache Airflow
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    6. Orchestration avec Apache Airflow
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../06_dag/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../06_dag/01_master/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DAG maître
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../06_dag/02_extract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DAG d'extraction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../06_dag/03_transform/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DAG de transformation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../06_dag/04_load/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DAG de chargement
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../06_dag/05_quality/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DAG de contrôle qualité
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../06_dag/06_communication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Communication entre les DAGs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../06_dag/07_error_handling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gestion des erreurs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../06_dag/08_execution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exécution complète du pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    7. Résultats
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    7. Résultats
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../07_resultats/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../07_resultats/01_pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exécution du pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../07_resultats/02_base_postgresql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Résultats dans PostgreSQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../07_resultats/03_dashboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dashboard de supervision
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../07_resultats/04_limites/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Limites du projet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../07_resultats/05_perspectives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Perspectives d'évolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    8. Monitoring
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    8. Monitoring
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../08_monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../08_monitoring/01_objectifs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Objectifs du monitoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../08_monitoring/02_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture de supervision
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../08_monitoring/03_kpi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Indicateurs de suivi (KPI)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../08_monitoring/04_outils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Outils de supervision
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../08_monitoring/05_alertes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gestion des alertes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../08_monitoring/06_incidents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gestion des incidents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../08_monitoring/07_perspectives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Perspectives d'évolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table des matières">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table des matières
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#presentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Présentation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="contextes-dexecution-et-resultats">Contextes d'exécution et résultats<a class="headerlink" href="#contextes-dexecution-et-resultats" title="Permanent link">&para;</a></h1>
+<h2 id="presentation">Présentation<a class="headerlink" href="#presentation" title="Permanent link">&para;</a></h2>
+<p>Les chapitres précédents ont présenté le contrat standard des articles ainsi que les mécanismes permettant de les extraire depuis différentes sources.</p>
+<p>Cependant, produire des articles ne constitue qu'une partie du fonctionnement du pipeline.</p>
+<p>Il est également nécessaire de suivre le déroulement des traitements, de conserver certaines informations temporaires et de produire des rapports décrivant le résultat des différentes opérations.</p>
+<p>J'ai donc mis en place plusieurs modèles dédiés au suivi de l'exécution.</p>
+<p>Ces objets ne représentent pas des données métier comme les articles, mais des informations techniques permettant de piloter le pipeline et d'assurer sa traçabilité.</p>
+<hr />
+<h1 id="pourquoi-utiliser-des-contextes-dexecution">Pourquoi utiliser des contextes d'exécution ?<a class="headerlink" href="#pourquoi-utiliser-des-contextes-dexecution" title="Permanent link">&para;</a></h1>
+<p>Une extraction ne consiste pas uniquement à parcourir une source de données.</p>
+<p>Pendant son exécution, le pipeline doit conserver de nombreuses informations temporaires.</p>
+<p>Par exemple :</p>
+<ul>
+<li>la configuration utilisée ;</li>
+<li>les articles déjà rencontrés ;</li>
+<li>les doublons détectés ;</li>
+<li>les erreurs rencontrées ;</li>
+<li>les statistiques de traitement ;</li>
+<li>les informations nécessaires à la reprise de certaines opérations.</li>
+</ul>
+<p>J'ai choisi de regrouper ces informations dans des contextes d'exécution plutôt que de les disperser entre plusieurs fonctions.</p>
+<p>Cette approche améliore la lisibilité du code et facilite le partage des informations entre les différents modules.</p>
+<hr />
+<h1 id="principe-general">Principe général<a class="headerlink" href="#principe-general" title="Permanent link">&para;</a></h1>
+<p>Le fonctionnement peut être résumé de la manière suivante.</p>
+<pre class="mermaid"><code>flowchart LR
+
+A[Configuration]
+
+A --&gt; B[Contexte d'exécution]
+
+B --&gt; C[Extracteur]
+
+C --&gt; D[Articles]
+
+C --&gt; E[Rapport]
+
+B --&gt; E</code></pre>
+<p>Le contexte accompagne l'extracteur pendant toute son exécution.</p>
+<p>Il conserve les informations nécessaires au bon déroulement des traitements et participe à la construction du rapport final.</p>
+<hr />
+<h1 id="les-differents-contextes">Les différents contextes<a class="headerlink" href="#les-differents-contextes" title="Permanent link">&para;</a></h1>
+<p>Le projet utilise plusieurs contextes spécialisés.</p>
+<p>Ils correspondent chacun à une famille de sources ou à un type de traitement particulier.</p>
+<p>Les principaux contextes sont :</p>
+<table>
+<thead>
+<tr>
+<th>Contexte</th>
+<th>Utilisation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DatasetExtractionContext</code></td>
+<td>Extraction des datasets</td>
+</tr>
+<tr>
+<td><code>RssExtractionContext</code></td>
+<td>Lecture des flux RSS</td>
+</tr>
+<tr>
+<td><code>RssBatchContext</code></td>
+<td>Traitement d'un ensemble de flux RSS</td>
+</tr>
+<tr>
+<td><code>ScraperExtractionContext</code></td>
+<td>Analyse des pages HTML</td>
+</tr>
+<tr>
+<td><code>SocialExtractionContext</code></td>
+<td>Collecte des réseaux sociaux</td>
+</tr>
+</tbody>
+</table>
+<p>Même si leurs contenus diffèrent légèrement, tous poursuivent le même objectif : conserver les informations temporaires nécessaires pendant une extraction.</p>
+<hr />
+<h1 id="une-memoire-temporaire">Une mémoire temporaire<a class="headerlink" href="#une-memoire-temporaire" title="Permanent link">&para;</a></h1>
+<p>Contrairement aux articles ou aux fichiers stockés dans PostgreSQL, les contextes d'exécution sont temporaires.</p>
+<p>Ils n'ont pas vocation à être enregistrés de manière permanente.</p>
+<p>Ils existent uniquement pendant le déroulement d'un traitement.</p>
+<p>Une fois l'extraction terminée, ils peuvent être libérés puisque les informations importantes ont déjà été transférées dans les rapports ou dans les données produites.</p>
+<p>Cette approche limite la consommation mémoire tout en simplifiant l'organisation du pipeline.</p>
+<hr />
+<h1 id="les-informations-conservees">Les informations conservées<a class="headerlink" href="#les-informations-conservees" title="Permanent link">&para;</a></h1>
+<p>Selon le type d'extraction, un contexte peut notamment contenir :</p>
+<ul>
+<li>la configuration utilisée ;</li>
+<li>les paramètres d'exécution ;</li>
+<li>les articles déjà rencontrés ;</li>
+<li>les identifiants utilisés pour la déduplication ;</li>
+<li>les erreurs rencontrées ;</li>
+<li>les différentes statistiques de traitement.</li>
+</ul>
+<p>Toutes ces informations sont accessibles aux différentes étapes de l'extraction sans qu'il soit nécessaire de les transmettre entre chaque fonction.</p>
+<p>Cette centralisation facilite le développement des extracteurs et améliore la lisibilité du code.</p>
+<hr />
+<h1 id="une-organisation-commune">Une organisation commune<a class="headerlink" href="#une-organisation-commune" title="Permanent link">&para;</a></h1>
+<p>Même si chaque famille de source possède son propre contexte, leur fonctionnement reste similaire.</p>
+<pre class="mermaid"><code>flowchart TD
+
+A[Configuration]
+
+A --&gt; B[Contexte]
+
+B --&gt; C[Extraction]
+
+C --&gt; D[Validation]
+
+D --&gt; E[Résultats]
+
+E --&gt; F[Rapport]</code></pre>
+<p>Cette organisation permet d'utiliser les mêmes principes de fonctionnement pour l'ensemble des moteurs d'extraction tout en conservant les spécificités propres à chaque famille de sources.</p>
+<hr />
+<h1 id="les-resultats-dexecution">Les résultats d'exécution<a class="headerlink" href="#les-resultats-dexecution" title="Permanent link">&para;</a></h1>
+<p>À la fin d'une extraction, le pipeline doit être capable de résumer précisément ce qui s'est produit.</p>
+<p>Pour cela, j'ai choisi d'utiliser plusieurs objets dédiés aux résultats d'exécution.</p>
+<p>Leur rôle est de conserver les informations utiles une fois le traitement terminé.</p>
+<p>Contrairement aux contextes d'exécution, ces objets représentent un état final et peuvent être transmis aux autres modules du pipeline.</p>
+<p>Ils servent notamment à produire les journaux, les tableaux de bord et les indicateurs de suivi.</p>
+<hr />
+<h1 id="les-differents-resultats">Les différents résultats<a class="headerlink" href="#les-differents-resultats" title="Permanent link">&para;</a></h1>
+<p>Le projet utilise plusieurs modèles décrivant les différentes étapes de l'exécution.</p>
+<p>Les principaux sont les suivants.</p>
+<table>
+<thead>
+<tr>
+<th>Modèle</th>
+<th>Rôle</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ExtractorResult</code></td>
+<td>Résultat produit par un extracteur</td>
+</tr>
+<tr>
+<td><code>ExtractorExecution</code></td>
+<td>Informations sur l'exécution d'un extracteur</td>
+</tr>
+<tr>
+<td><code>ExtractionResult</code></td>
+<td>Résultat global d'une extraction</td>
+</tr>
+<tr>
+<td><code>ArticlePreparationResult</code></td>
+<td>Résultat de la préparation d'un article</td>
+</tr>
+<tr>
+<td><code>ArticlePreparationReport</code></td>
+<td>Rapport détaillé de préparation</td>
+</tr>
+</tbody>
+</table>
+<p>Chaque modèle possède un objectif précis et intervient à une étape différente du pipeline.</p>
+<p>Cette séparation permet de conserver une architecture claire et d'éviter qu'un même objet ne remplisse plusieurs responsabilités.</p>
+<hr />
+<h1 id="le-resultat-dun-extracteur">Le résultat d'un extracteur<a class="headerlink" href="#le-resultat-dun-extracteur" title="Permanent link">&para;</a></h1>
+<p>Chaque extracteur produit un objet résumant son exécution.</p>
+<p>Celui-ci contient notamment :</p>
+<ul>
+<li>le statut final ;</li>
+<li>le nombre d'articles analysés ;</li>
+<li>le nombre d'articles conservés ;</li>
+<li>le nombre d'articles rejetés ;</li>
+<li>la durée d'exécution ;</li>
+<li>les éventuels messages d'erreur.</li>
+</ul>
+<p>Le fonctionnement général est présenté ci-dessous.</p>
+<pre class="mermaid"><code>flowchart LR
+
+A[Extracteur]
+
+A --&gt; B[Articles analysés]
+
+A --&gt; C[Articles rejetés]
+
+A --&gt; D[Articles conservés]
+
+B --&gt; E[ExtractorResult]
+
+C --&gt; E
+
+D --&gt; E</code></pre>
+<p>Cette structure permet de suivre précisément le comportement de chaque extracteur sans avoir à analyser les journaux d'exécution.</p>
+<hr />
+<h1 id="les-statuts-dexecution">Les statuts d'exécution<a class="headerlink" href="#les-statuts-dexecution" title="Permanent link">&para;</a></h1>
+<p>Chaque résultat est associé à un statut décrivant l'issue du traitement.</p>
+<p>Les principaux statuts utilisés dans le projet sont :</p>
+<table>
+<thead>
+<tr>
+<th>Statut</th>
+<th>Signification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>success</code></td>
+<td>Extraction réalisée avec succès</td>
+</tr>
+<tr>
+<td><code>partial_success</code></td>
+<td>Extraction partiellement réussie</td>
+</tr>
+<tr>
+<td><code>empty</code></td>
+<td>Aucun article valide n'a été produit</td>
+</tr>
+<tr>
+<td><code>failed</code></td>
+<td>L'extraction a échoué</td>
+</tr>
+<tr>
+<td><code>disabled</code></td>
+<td>La source est désactivée</td>
+</tr>
+</tbody>
+</table>
+<p>Cette classification facilite la lecture des rapports d'exécution et permet au pipeline d'adapter son comportement en fonction du résultat obtenu.</p>
+<p>Par exemple, un extracteur désactivé n'est pas considéré comme une erreur, contrairement à un extracteur ayant échoué.</p>
+<hr />
+<h1 id="les-statistiques-dexecution">Les statistiques d'exécution<a class="headerlink" href="#les-statistiques-dexecution" title="Permanent link">&para;</a></h1>
+<p>Au-delà du statut final, chaque résultat rassemble plusieurs indicateurs utiles.</p>
+<p>Parmi les principaux indicateurs figurent :</p>
+<ul>
+<li>le nombre d'articles parcourus ;</li>
+<li>le nombre d'articles extraits ;</li>
+<li>le nombre de rejets ;</li>
+<li>la durée totale du traitement ;</li>
+<li>le nombre d'erreurs rencontrées.</li>
+</ul>
+<p>Ces statistiques permettent de mesurer rapidement la qualité d'une extraction et de détecter d'éventuelles anomalies.</p>
+<p>Par exemple, une forte augmentation du nombre de rejets peut révéler une modification du format d'une source ou un problème de configuration.</p>
+<hr />
+<h1 id="les-rapports-de-preparation">Les rapports de préparation<a class="headerlink" href="#les-rapports-de-preparation" title="Permanent link">&para;</a></h1>
+<p>Après l'extraction, plusieurs traitements sont réalisés avant le stockage définitif des données.</p>
+<p>Cette étape produit également ses propres rapports.</p>
+<p>Ils permettent notamment de connaître :</p>
+<ul>
+<li>le nombre d'articles préparés ;</li>
+<li>les transformations réalisées ;</li>
+<li>les validations appliquées ;</li>
+<li>les éventuels rejets ;</li>
+<li>les erreurs rencontrées.</li>
+</ul>
+<p>Ces informations complètent les résultats produits par les extracteurs et offrent une vision plus précise du déroulement du pipeline.</p>
+<hr />
+<h1 id="une-tracabilite-complete">Une traçabilité complète<a class="headerlink" href="#une-tracabilite-complete" title="Permanent link">&para;</a></h1>
+<p>L'utilisation de résultats spécialisés permet de conserver une trace des différentes étapes du traitement.</p>
+<pre class="mermaid"><code>flowchart TD
+
+A[Extraction]
+
+A --&gt; B[ExtractorResult]
+
+B --&gt; C[Préparation]
+
+C --&gt; D[ArticlePreparationReport]
+
+D --&gt; E[Rapport global]</code></pre>
+<p>Grâce à cette organisation, il est possible d'identifier rapidement l'origine d'un problème sans avoir à examiner l'ensemble des journaux d'exécution.</p>
+<p>Les différents rapports jouent ainsi un rôle important dans le suivi et le débogage du pipeline.</p>
+<hr />
+<h1 id="les-objets-intermediaires">Les objets intermédiaires<a class="headerlink" href="#les-objets-intermediaires" title="Permanent link">&para;</a></h1>
+<p>En complément des contextes et des rapports d'exécution, le projet utilise plusieurs objets intermédiaires.</p>
+<p>Ces modèles ne représentent ni des données métier, ni des résultats définitifs.</p>
+<p>Ils servent uniquement à transporter certaines informations pendant une étape précise du pipeline.</p>
+<p>Cette approche permet de limiter la complexité des extracteurs en leur évitant de manipuler directement des structures hétérogènes.</p>
+<hr />
+<h1 id="les-elements-temporaires">Les éléments temporaires<a class="headerlink" href="#les-elements-temporaires" title="Permanent link">&para;</a></h1>
+<p>Lors d'une extraction, certaines informations doivent être conservées uniquement pendant quelques instants.</p>
+<p>C'est notamment le cas :</p>
+<ul>
+<li>d'un flux RSS téléchargé ;</li>
+<li>d'une publication provenant d'un réseau social ;</li>
+<li>d'une réponse intermédiaire d'une API ;</li>
+<li>d'informations nécessaires à une transformation.</li>
+</ul>
+<p>Ces données sont encapsulées dans des objets temporaires qui disparaissent une fois leur traitement terminé.</p>
+<p>Leur durée de vie est donc limitée à l'exécution en cours.</p>
+<hr />
+<h1 id="une-separation-des-responsabilites">Une séparation des responsabilités<a class="headerlink" href="#une-separation-des-responsabilites" title="Permanent link">&para;</a></h1>
+<p>J'ai volontairement distingué plusieurs catégories d'objets.</p>
+<p>Leur rôle peut être résumé de la manière suivante.</p>
+<pre class="mermaid"><code>flowchart TD
+
+A[Configuration]
+
+A --&gt; B[Contexte]
+
+B --&gt; C[Objet intermédiaire]
+
+C --&gt; D[Article]
+
+D --&gt; E[Résultat]
+
+E --&gt; F[Rapport]</code></pre>
+<p>Chaque niveau possède une responsabilité bien définie.</p>
+<p>Cette séparation limite les dépendances entre les différents modules et facilite leur maintenance.</p>
+<hr />
+<h1 id="les-contextes-et-les-resultats">Les contextes et les résultats<a class="headerlink" href="#les-contextes-et-les-resultats" title="Permanent link">&para;</a></h1>
+<p>Même si leurs noms sont proches, les contextes d'exécution et les résultats répondent à des besoins différents.</p>
+<p>Les contextes accompagnent l'exécution.</p>
+<p>Ils permettent aux extracteurs de partager des informations pendant leur fonctionnement.</p>
+<p>Les résultats, en revanche, décrivent ce qui s'est réellement produit une fois le traitement terminé.</p>
+<p>Cette distinction simplifie le développement des extracteurs et évite de mélanger les informations temporaires avec les données destinées au suivi du pipeline.</p>
+<hr />
+<h1 id="les-rapports-dexecution">Les rapports d'exécution<a class="headerlink" href="#les-rapports-dexecution" title="Permanent link">&para;</a></h1>
+<p>À la fin de chaque traitement, les différents résultats sont regroupés afin de produire un rapport synthétique.</p>
+<p>Ces rapports permettent notamment de connaître :</p>
+<ul>
+<li>les sources traitées ;</li>
+<li>les extracteurs exécutés ;</li>
+<li>les articles analysés ;</li>
+<li>les articles conservés ;</li>
+<li>les articles rejetés ;</li>
+<li>les erreurs rencontrées ;</li>
+<li>la durée des traitements.</li>
+</ul>
+<p>Ces informations sont utilisées aussi bien par les journaux que par le tableau de bord de supervision.</p>
+<hr />
+<h1 id="une-vision-globale-de-lexecution">Une vision globale de l'exécution<a class="headerlink" href="#une-vision-globale-de-lexecution" title="Permanent link">&para;</a></h1>
+<p>Le fonctionnement général peut être résumé par le schéma suivant.</p>
+<pre class="mermaid"><code>flowchart LR
+
+A[Configuration]
+
+A --&gt; B[Contexte]
+
+B --&gt; C[Extraction]
+
+C --&gt; D[Objet intermédiaire]
+
+D --&gt; E[Article]
+
+E --&gt; F[Résultat]
+
+F --&gt; G[Rapport]</code></pre>
+<p>Chaque étape enrichit progressivement les informations disponibles jusqu'à produire un rapport complet décrivant le déroulement de l'exécution.</p>
+<hr />
+<h1 id="une-architecture-orientee-suivi">Une architecture orientée suivi<a class="headerlink" href="#une-architecture-orientee-suivi" title="Permanent link">&para;</a></h1>
+<p>L'utilisation de contextes, d'objets intermédiaires et de résultats spécialisés me permet de suivre précisément chaque étape du pipeline.</p>
+<p>Cette organisation facilite :</p>
+<ul>
+<li>le débogage ;</li>
+<li>la supervision ;</li>
+<li>l'analyse des performances ;</li>
+<li>la détection des anomalies ;</li>
+<li>la production d'indicateurs de qualité.</li>
+</ul>
+<p>Elle constitue ainsi un élément important de la fiabilité globale de <strong>CheckIt.AI</strong>.</p>
+<hr />
+<h1 id="les-benefices-de-cette-organisation">Les bénéfices de cette organisation<a class="headerlink" href="#les-benefices-de-cette-organisation" title="Permanent link">&para;</a></h1>
+<p>L'utilisation de contextes d'exécution et de modèles de résultats constitue un élément important de l'architecture de <strong>CheckIt.AI</strong>.</p>
+<p>J'ai choisi de distinguer clairement les données temporaires des données finales afin de rendre le fonctionnement du pipeline plus lisible.</p>
+<p>Cette séparation présente plusieurs avantages.</p>
+<p>Tout d'abord, elle simplifie le développement des extracteurs. Les informations nécessaires pendant l'exécution sont regroupées dans un même objet, ce qui évite de multiplier les paramètres entre les fonctions.</p>
+<p>Elle améliore également la maintenance du projet. Chaque modèle possède une responsabilité bien définie et peut évoluer indépendamment des autres.</p>
+<p>Enfin, cette organisation facilite la supervision du pipeline en produisant des rapports homogènes pour toutes les familles d'extracteurs.</p>
+<hr />
+<h1 id="contribution-au-suivi-du-pipeline">Contribution au suivi du pipeline<a class="headerlink" href="#contribution-au-suivi-du-pipeline" title="Permanent link">&para;</a></h1>
+<p>Les modèles de résultats ne servent pas uniquement à produire des statistiques.</p>
+<p>Ils jouent également un rôle important dans le suivi quotidien du pipeline.</p>
+<p>Les informations qu'ils contiennent permettent notamment :</p>
+<ul>
+<li>de mesurer les performances des extracteurs ;</li>
+<li>de suivre l'évolution du nombre d'articles collectés ;</li>
+<li>de détecter une augmentation des rejets ;</li>
+<li>de repérer rapidement une source devenue indisponible ;</li>
+<li>d'identifier les traitements les plus longs.</li>
+</ul>
+<p>Ces indicateurs sont ensuite exploités par les journaux d'exécution et par le tableau de bord du projet.</p>
+<hr />
+<h1 id="une-architecture-orientee-observabilite">Une architecture orientée observabilité<a class="headerlink" href="#une-architecture-orientee-observabilite" title="Permanent link">&para;</a></h1>
+<p>Au-delà de la simple extraction des données, j'ai souhaité que le pipeline soit capable d'expliquer son propre fonctionnement.</p>
+<p>Les différents modèles utilisés pendant l'exécution contribuent ainsi à rendre chaque étape observable.</p>
+<pre class="mermaid"><code>flowchart TD
+
+A[Configuration]
+
+A --&gt; B[Contexte]
+
+B --&gt; C[Extraction]
+
+C --&gt; D[Résultat]
+
+D --&gt; E[Rapport]
+
+E --&gt; F[Journal]
+
+E --&gt; G[Dashboard]</code></pre>
+<p>Cette approche facilite l'identification des anomalies et permet de comprendre rapidement le comportement du pipeline sans avoir à analyser directement le code.</p>
+<hr />
+<h1 id="evolutions-possibles">Évolutions possibles<a class="headerlink" href="#evolutions-possibles" title="Permanent link">&para;</a></h1>
+<p>L'organisation actuelle répond aux besoins du projet, mais elle pourra évoluer avec l'ajout de nouvelles fonctionnalités.</p>
+<p>Par exemple, il sera possible :</p>
+<ul>
+<li>d'enrichir les rapports avec de nouveaux indicateurs ;</li>
+<li>de conserver un historique plus détaillé des exécutions ;</li>
+<li>d'ajouter des métriques de performance ;</li>
+<li>d'intégrer des informations de supervision plus fines ;</li>
+<li>de produire des rapports adaptés à différents profils d'utilisateurs.</li>
+</ul>
+<p>La séparation entre contextes, résultats et rapports facilitera ces évolutions sans remettre en cause le fonctionnement général du pipeline.</p>
+<hr />
+<h1 id="bilan">Bilan<a class="headerlink" href="#bilan" title="Permanent link">&para;</a></h1>
+<p>J'ai choisi d'utiliser plusieurs modèles spécialisés afin de suivre le déroulement des traitements sans mélanger les données métier avec les informations techniques.</p>
+<p>Les contextes accompagnent les extracteurs pendant leur exécution, les objets intermédiaires facilitent certaines étapes du traitement et les résultats résument les opérations réalisées.</p>
+<p>Cette organisation améliore la lisibilité de l'architecture et facilite la maintenance du projet.</p>
+<p>Elle contribue également à produire des informations fiables pour le suivi, le diagnostic et la supervision du pipeline.</p>
+<hr />
+<h1 id="conclusion">Conclusion<a class="headerlink" href="#conclusion" title="Permanent link">&para;</a></h1>
+<p>Les contextes d'exécution et les modèles de résultats complètent l'architecture présentée dans les chapitres précédents.</p>
+<p>Ils permettent d'organiser les traitements, de suivre leur déroulement et de produire des rapports homogènes pour l'ensemble des extracteurs.</p>
+<p>Grâce à cette approche, <strong>CheckIt.AI</strong> ne se contente pas de collecter des données : il est également capable de mesurer, d'expliquer et de tracer chacune des étapes de son fonctionnement.</p>
+<p>Le chapitre suivant est consacré aux modèles utilisés pour la gestion des labels, des images et des règles liées au fichier <strong>robots.txt</strong>, qui participent à la validation et à l'enrichissement des données collectées.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Retour en haut de la page
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "search.highlight", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copi\u00e9 dans le presse-papier", "clipboard.copy": "Copier dans le presse-papier", "search.result.more.one": "1 de plus sur cette page", "search.result.more.other": "# de plus sur cette page", "search.result.none": "Aucun document trouv\u00e9", "search.result.one": "1 document trouv\u00e9", "search.result.other": "# documents trouv\u00e9s", "search.result.placeholder": "Taper pour d\u00e9marrer la recherche", "search.result.term.missing": "Non trouv\u00e9", "select.version": "S\u00e9lectionner la version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="https://unpkg.com/mermaid@11/dist/mermaid.min.js"></script>
+      
+    
+  </body>
+</html>
