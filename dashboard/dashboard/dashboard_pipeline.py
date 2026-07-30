@@ -84,6 +84,30 @@ TERMINAL_STATES = {
 }
 
 
+PIPELINE_COVERAGE_FIELDS = [
+    (
+        "Réussite des runs",
+        "success_rate",
+        "Part des exécutions terminées avec succès."
+    ),
+    (
+        "Santé Airflow",
+        "health_rate",
+        "Part des composants Airflow déclarés opérationnels."
+    ),
+    (
+        "DAGs actifs",
+        "active_dag_rate",
+        "Part des DAGs CheckIt.AI actuellement actifs."
+    ),
+    (
+        "DAGs sans échec",
+        "healthy_dag_rate",
+        "Part des DAGs dont la dernière exécution n'est pas en échec."
+    )
+]
+
+
 # Cache
 
 @st.cache_data(ttl=15, show_spinner=False)
@@ -195,8 +219,335 @@ def get_heartbeat(
     )
 
 
+def normalize_count(value: Any) -> int:
+    """Convertit une valeur en compteur positif exploitable."""
+
+    try:
+        return max(0, int(value or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def build_state_dataframe(
+    state_counts: dict[str, Any]
+) -> pd.DataFrame:
+    """Construit un tableau normalisé de répartition des états."""
+
+    # Tableau
+
+    rows = [
+        {
+            "État": format_status(state),
+            "Nombre": normalize_count(count)
+        }
+        for state, count in state_counts.items()
+    ]
+
+    dataframe = pd.DataFrame(rows)
+
+    if dataframe.empty:
+        return dataframe
+
+    return dataframe.sort_values(
+        by="Nombre",
+        ascending=True
+    )
+
+
+def render_state_distribution_chart(
+    state_counts: dict[str, Any],
+    *,
+    empty_message: str
+) -> None:
+    """Affiche une répartition d'états sous forme de graphique."""
+
+    dataframe = build_state_dataframe(state_counts)
+
+    if dataframe.empty or dataframe["Nombre"].sum() <= 0:
+        st.info(empty_message)
+        return
+
+    st.bar_chart(
+        dataframe.set_index("État")[["Nombre"]],
+        width="stretch",
+        horizontal=True
+    )
+
+
+def normalize_rate(value: Any) -> float:
+    """Normalise un taux entre zéro et un."""
+
+    try:
+        rate = float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+    if rate > 1:
+        rate /= 100
+
+    return min(1.0, max(0.0, rate))
+
+
+def render_pipeline_donut(
+    *,
+    title: str,
+    rate: float,
+    help_text: str,
+    key: str
+) -> None:
+    """Affiche un taux du pipeline sous forme d'anneau."""
+
+    # Calcul du taux
+
+    normalized_rate = normalize_rate(rate)
+    percentage = normalized_rate * 100
+    percentage_label = (
+        f"{percentage:.1f} %"
+        .replace(".", ",")
+    )
+
+    # Données du camembert
+
+    chart_data = pd.DataFrame([
+        {
+            "Couverture": "Atteint",
+            "Valeur": normalized_rate
+        },
+        {
+            "Couverture": "Restant",
+            "Valeur": 1 - normalized_rate
+        }
+    ])
+
+    # Configuration du camembert
+
+    chart_spec = {
+        "height": 180,
+        "mark": {
+            "type": "arc",
+            "innerRadius": 52,
+            "outerRadius": 76,
+            "cornerRadius": 4
+        },
+        "encoding": {
+            "theta": {
+                "field": "Valeur",
+                "type": "quantitative",
+                "stack": True
+            },
+            "color": {
+                "field": "Couverture",
+                "type": "nominal",
+                "scale": {
+                    "domain": [
+                        "Atteint",
+                        "Restant"
+                    ],
+                    "range": [
+                        "#3B82F6",
+                        "#E5E7EB"
+                    ]
+                },
+                "legend": None
+            },
+            "tooltip": [
+                {
+                    "field": "Couverture",
+                    "type": "nominal",
+                    "title": "État"
+                },
+                {
+                    "field": "Valeur",
+                    "type": "quantitative",
+                    "title": "Part",
+                    "format": ".1%"
+                }
+            ]
+        },
+        "view": {
+            "stroke": None
+        }
+    }
+
+    # Affichage
+
+    with st.container(border=True):
+
+        # Haut : titre
+
+        st.markdown(f"##### {title}")
+
+        # Centre : camembert
+
+        st.vega_lite_chart(
+            chart_data,
+            chart_spec,
+            width="stretch",
+            key=key
+        )
+
+        # Bas : pourcentage
+
+        st.markdown(
+            (
+                "<p style="
+                "'text-align:center;"
+                "font-size:1.35rem;"
+                "font-weight:700;"
+                "margin-top:-8px;"
+                "margin-bottom:12px;'>"
+                f"{percentage_label}"
+                "</p>"
+            ),
+            unsafe_allow_html=True
+        )
+
+        # Bas : description
+
+        st.caption(help_text)
+        
+        
+def load_pipeline_coverage_rates() -> dict[str, float]:
+    """Calcule les principaux taux de supervision du pipeline."""
+
+    # Valeurs par défaut
+
+    rates = {
+        "success_rate": 0.0,
+        "health_rate": 0.0,
+        "active_dag_rate": 0.0,
+        "healthy_dag_rate": 0.0
+    }
+
+    # Taux de réussite
+
+    try:
+        summary = load_run_summary(
+            "checkit_master_pipeline",
+            DEFAULT_RUN_LIMIT
+        )
+        rates["success_rate"] = normalize_rate(
+            summary.get("success_rate")
+        )
+    except Exception as error:
+        logger.warning(
+            "Impossible de calculer le taux de réussite KPI : %s",
+            error
+        )
+
+    # Santé Airflow
+
+    try:
+        health = load_health_summary()
+        healthy_count = normalize_count(health.get("healthy_count"))
+        unhealthy_count = normalize_count(health.get("unhealthy_count"))
+        unknown_count = normalize_count(health.get("unknown_count"))
+        total_count = healthy_count + unhealthy_count + unknown_count
+
+        if total_count > 0:
+            rates["health_rate"] = healthy_count / total_count
+    except Exception as error:
+        logger.warning(
+            "Impossible de calculer la santé Airflow KPI : %s",
+            error
+        )
+
+    # État des DAGs
+
+    try:
+        dags = load_dag_overview()
+        dag_count = len(dags)
+
+        if dag_count > 0:
+            active_count = sum(
+                not bool(dag.get("is_paused"))
+                for dag in dags
+            )
+            failed_count = sum(
+                str(dag.get("last_state") or "").lower() == "failed"
+                for dag in dags
+            )
+
+            rates["active_dag_rate"] = active_count / dag_count
+            rates["healthy_dag_rate"] = (
+                dag_count - failed_count
+            ) / dag_count
+    except Exception as error:
+        logger.warning(
+            "Impossible de calculer les taux des DAGs KPI : %s",
+            error
+        )
+
+    return rates
+
+
+def render_pipeline_coverage_donuts() -> None:
+    """Affiche les taux du pipeline sous forme d'anneaux."""
+
+    # Haut : titre
+
+    st.markdown("### Couvertures")
+    st.caption(
+        "Lecture visuelle des principaux taux de fonctionnement."
+    )
+
+    # Données
+
+    rates = load_pipeline_coverage_rates()
+
+    # Lignes de camemberts
+
+    for row_index in range(0, len(PIPELINE_COVERAGE_FIELDS), 2):
+        # Colonnes gauche et droite
+
+        columns = st.columns(2)
+        row_fields = PIPELINE_COVERAGE_FIELDS[
+            row_index:row_index + 2
+        ]
+
+        # Camemberts de la ligne
+
+        for column, field in zip(columns, row_fields):
+            title, rate_field, help_text = field
+
+            with column:
+                render_pipeline_donut(
+                    title=title,
+                    rate=rates.get(rate_field, 0.0),
+                    help_text=help_text,
+                    key=f"pipeline_donut_{rate_field}"
+                )
+
+
+def render_pipeline_kpi_dashboard() -> None:
+    """Affiche les KPI numériques et les taux du pipeline."""
+
+    # Mise en page principale
+
+    kpi_column, coverage_column = st.columns(
+        [3, 2],
+        gap="large"
+    )
+
+    # Colonne de gauche : indicateurs numériques
+
+    with kpi_column:
+        st.markdown("### Indicateurs clés")
+        st.caption(
+            "Volumes, traitements et résultats opérationnels du pipeline."
+        )
+        render_pipeline_kpi_section()
+
+    # Colonne de droite : camemberts
+
+    with coverage_column:
+        render_pipeline_coverage_donuts()
+
+
 def render_header() -> None:
     """Affiche l'en-tête de la page Pipeline."""
+
+    # Haut de page
 
     render_page_header(
         eyebrow="Centre de supervision",
@@ -224,6 +575,8 @@ def render_health_section() -> None:
         "Disponibilité générale des composants d'orchestration."
     )
 
+    # Santé Airflow
+
     try:
         health = load_health_summary()
     except Exception as error:
@@ -238,22 +591,29 @@ def render_health_section() -> None:
         )
         return
 
+    healthy_count = normalize_count(health.get("healthy_count"))
+    unhealthy_count = normalize_count(health.get("unhealthy_count"))
+    unknown_count = normalize_count(health.get("unknown_count"))
+    total_count = healthy_count + unhealthy_count + unknown_count
+
+    # Indicateurs
+
     render_metric_cards([
         (
             "État global",
             format_status(health.get("status"))
         ),
         (
-            "Composants opérationnels",
-            format_number(health.get("healthy_count"))
+            "Composants suivis",
+            format_number(total_count)
         ),
         (
-            "Composants indisponibles",
-            format_number(health.get("unhealthy_count"))
+            "Opérationnels",
+            format_number(healthy_count)
         ),
         (
-            "État inconnu",
-            format_number(health.get("unknown_count"))
+            "À surveiller",
+            format_number(unhealthy_count + unknown_count)
         )
     ])
 
@@ -266,6 +626,8 @@ def render_health_section() -> None:
         )
         return
 
+    # Tableau
+
     rows = [
         {
             "Composant": name.replace("_", " ").capitalize(),
@@ -277,12 +639,39 @@ def render_health_section() -> None:
         for name, component in components.items()
     ]
 
-    with st.expander("Consulter le détail des composants"):
-        st.dataframe(
-            pd.DataFrame(rows),
-            width="stretch",
-            hide_index=True
-        )
+    state_counts: dict[str, int] = {}
+
+    for component in components.values():
+        state = str(
+            component.get("status")
+            or "unknown"
+        ).lower()
+
+        state_counts[state] = state_counts.get(state, 0) + 1
+
+    # Colonne de gauche : graphique
+    # Colonne de droite : tableau
+
+    chart_column, detail_column = st.columns([1, 2])
+
+    with chart_column:
+        with st.container(border=True):
+            st.markdown("#### Répartition des états")
+            render_state_distribution_chart(
+                state_counts,
+                empty_message=(
+                    "Aucun état de composant n'est disponible."
+                )
+            )
+
+    with detail_column:
+        with st.container(border=True):
+            st.markdown("#### Composants supervisés")
+            st.dataframe(
+                pd.DataFrame(rows),
+                width="stretch",
+                hide_index=True
+            )
 
 
 # Vue générale des DAGs
@@ -295,6 +684,8 @@ def render_dag_overview_section() -> None:
         "DAGs CheckIt.AI",
         "État de planification et dernière exécution de chaque DAG."
     )
+
+    # État des DAGs
 
     try:
         dags = load_dag_overview()
@@ -319,6 +710,8 @@ def render_dag_overview_section() -> None:
         for dag in dags
     )
 
+    paused_count = len(dags) - active_count
+
     running_count = sum(
         str(dag.get("last_state") or "").lower() == "running"
         for dag in dags
@@ -328,6 +721,8 @@ def render_dag_overview_section() -> None:
         str(dag.get("last_state") or "").lower() == "failed"
         for dag in dags
     )
+
+    # Indicateurs
 
     render_metric_cards([
         (
@@ -348,17 +743,61 @@ def render_dag_overview_section() -> None:
         )
     ])
 
-    st.dataframe(
-        prepare_dag_overview_dataframe(dags),
-        width="stretch",
-        hide_index=True
-    )
+    state_counts: dict[str, int] = {}
+
+    for dag in dags:
+        state = str(
+            dag.get("last_state")
+            or "unknown"
+        ).lower()
+
+        state_counts[state] = state_counts.get(state, 0) + 1
+
+    # Colonne de gauche : états des DAGs
+    # Colonne de droite : planification
+
+    chart_column, schedule_column = st.columns([2, 1])
+
+    with chart_column:
+        with st.container(border=True):
+            st.markdown("#### Dernier état des DAGs")
+            render_state_distribution_chart(
+                state_counts,
+                empty_message=(
+                    "Aucun état d'exécution n'est disponible."
+                )
+            )
+
+    with schedule_column:
+        with st.container(border=True):
+            st.markdown("#### Planification")
+            st.bar_chart(
+                pd.DataFrame({
+                    "Statut": ["Actifs", "En pause"],
+                    "Nombre": [active_count, paused_count]
+                }).set_index("Statut"),
+                width="stretch"
+            )
+
+    # Bas : tableau détaillé
+
+    with st.expander(
+        "Consulter le détail des DAGs",
+        expanded=True
+    ):
+        st.dataframe(
+            prepare_dag_overview_dataframe(dags),
+            width="stretch",
+            hide_index=True
+        )
 
 
 def prepare_dag_overview_dataframe(
     dags: list[dict[str, Any]]
 ) -> pd.DataFrame:
     """Prépare les DAGs pour leur affichage."""
+
+    # Tableau
 
     rows = [
         {
@@ -398,7 +837,11 @@ def render_run_summary_section() -> None:
         "Analyse synthétique des derniers DagRuns du DAG sélectionné."
     )
 
+    # Haut : filtres
+
     dag_id, limit = render_run_filters("summary")
+
+    # Taux de réussite
 
     try:
         summary = load_run_summary(
@@ -416,6 +859,8 @@ def render_run_summary_section() -> None:
             error
         )
         return
+
+    # Indicateurs
 
     render_metric_cards([
         (
@@ -435,6 +880,8 @@ def render_run_summary_section() -> None:
             format_percentage(summary.get("success_rate"))
         )
     ])
+
+    # Indicateurs
 
     render_metric_cards([
         (
@@ -464,20 +911,29 @@ def render_run_summary_section() -> None:
     if not state_counts:
         return
 
-    rows = [
-        {
-            "État": format_status(state),
-            "Nombre": count
-        }
-        for state, count in state_counts.items()
-    ]
+    # Colonne de gauche : graphique
+    # Colonne de droite : tableau
 
-    with st.expander("Répartition détaillée des états"):
-        st.dataframe(
-            pd.DataFrame(rows),
-            width="stretch",
-            hide_index=True
-        )
+    chart_column, table_column = st.columns([2, 1])
+
+    with chart_column:
+        with st.container(border=True):
+            st.markdown("#### Répartition des exécutions")
+            render_state_distribution_chart(
+                state_counts,
+                empty_message=(
+                    "Aucune exécution n'est disponible."
+                )
+            )
+
+    with table_column:
+        with st.container(border=True):
+            st.markdown("#### Détail des états")
+            st.dataframe(
+                build_state_dataframe(state_counts),
+                width="stretch",
+                hide_index=True
+            )
 
 
 # Historique des exécutions
@@ -490,6 +946,8 @@ def render_runs_section() -> None:
         "Historique des exécutions",
         "Sélection d'un run pour consulter ses tâches et ses journaux."
     )
+
+    # Haut : filtres
 
     dag_id, limit = render_run_filters("history")
 
@@ -513,6 +971,8 @@ def render_runs_section() -> None:
     if not runs:
         st.info("Aucune exécution n'a été trouvée.")
         return
+
+    # Tableau des exécutions
 
     event = st.dataframe(
         prepare_runs_dataframe(runs),
@@ -596,6 +1056,8 @@ def prepare_runs_dataframe(
 ) -> pd.DataFrame:
     """Prépare les DagRuns pour leur affichage."""
 
+    # Tableau
+
     rows = [
         {
             "DAG": format_dag_name(
@@ -638,13 +1100,19 @@ def render_run_details(
 ) -> None:
     """Affiche le détail d'une exécution sélectionnée."""
 
+    # Séparation haute
+
     st.divider()
+
+    # Haut : informations générales
 
     render_layout_section_header(
         "🔍",
         "Détail de l'exécution",
         "Informations générales et tâches du DagRun sélectionné."
     )
+
+    # Indicateurs
 
     render_metric_cards([
         (
@@ -666,6 +1134,8 @@ def render_run_details(
             format_datetime(run.get("end_date"))
         )
     ])
+
+    # Informations détaillées
 
     render_information_rows([
         (
@@ -699,6 +1169,8 @@ def render_run_details(
             error
         )
         return
+
+    # Bas : tâches
 
     render_tasks_section(
         dag_id,
@@ -755,6 +1227,19 @@ def render_tasks_section(
             max(1, len(metrics))
         )
     )
+
+    # Graphique de répartition
+
+    with st.container(border=True):
+        st.markdown("#### Répartition des tâches")
+        render_state_distribution_chart(
+            state_counts,
+            empty_message=(
+                "Aucun état de tâche n'est disponible."
+            )
+        )
+
+    # Tableau des tâches
 
     event = st.dataframe(
         prepare_tasks_dataframe(tasks),
@@ -844,17 +1329,24 @@ def render_task_log_section(
         )
         return
 
-    try_number = int(
-        task.get("try_number")
-        or task.get("task_try_number")
-        or 1
+    try_number = max(
+        1,
+        int(
+            task.get("task_try_number")
+            or task.get("try_number")
+            or 1
+        )
     )
 
     map_index = int(
         task.get("map_index", -1)
     )
 
+    # Séparation haute
+
     st.divider()
+
+    # Haut : journal
 
     render_layout_section_header(
         "📜",
@@ -880,12 +1372,14 @@ def render_task_log_section(
         columns_count=3
     )
 
+    # Sélection de la tentative
+
     with st.container(border=True):
         selected_try_number = st.number_input(
             "Tentative à consulter",
             min_value=1,
-            max_value=max(1, try_number),
-            value=max(1, try_number),
+            max_value=try_number,
+            value=try_number,
             step=1,
             key=f"log_try_{dag_id}_{dag_run_id}_{task_id}"
         )
@@ -898,12 +1392,41 @@ def render_task_log_section(
             int(selected_try_number),
             map_index
         )
+
     except AirflowServiceError as error:
         logger.warning(
             "Impossible de charger le log de la tâche %s : %s",
             task_id,
             error
         )
+
+        error_message = str(error).lower()
+
+        if (
+            "404" in error_message
+            or "taskinstance not found" in error_message
+            or "task instance not found" in error_message
+        ):
+            st.info(
+                "Cette instance de tâche n'est plus disponible dans "
+                "Airflow. Le DagRun a peut-être été supprimé, réinitialisé "
+                "ou recréé depuis le chargement de la page."
+            )
+
+            if st.button(
+                "🔄 Actualiser les exécutions",
+                key=(
+                    f"refresh_missing_task_"
+                    f"{dag_id}_{dag_run_id}_{task_id}"
+                ),
+                width="stretch"
+            ):
+                load_dag_runs.clear()
+                load_task_instances.clear()
+                load_task_log.clear()
+                st.rerun()
+
+            return
 
         render_error(
             "Le journal de cette tâche n'est pas disponible.",
@@ -929,11 +1452,15 @@ def render_task_log_section(
         )
         return
 
+    # Contenu du journal
+
     st.code(
         log_content,
         language="text",
         line_numbers=True
     )
+
+    # Bas : téléchargement
 
     st.download_button(
         "⬇️ Télécharger le journal",
@@ -945,7 +1472,6 @@ def render_task_log_section(
         mime="text/plain",
         width="stretch"
     )
-
 
 # Échecs récents
 
@@ -1013,11 +1539,53 @@ def render_failures_section() -> None:
         columns_count=2
     )
 
-    st.dataframe(
-        prepare_failures_dataframe(failures),
-        width="stretch",
-        hide_index=True
-    )
+    failure_counts: dict[str, int] = {}
+
+    for failure in failures:
+        dag_name = format_dag_name(
+            str(failure.get("dag_id") or "Inconnu")
+        )
+
+        failure_counts[dag_name] = (
+            failure_counts.get(dag_name, 0) + 1
+        )
+
+    # Colonne de gauche : graphique
+    # Colonne de droite : tableau
+
+    chart_column, table_column = st.columns([1, 2])
+
+    with chart_column:
+        with st.container(border=True):
+            st.markdown("#### Incidents par DAG")
+
+            failure_dataframe = pd.DataFrame([
+                {
+                    "DAG": dag_name,
+                    "Échecs": count
+                }
+                for dag_name, count in failure_counts.items()
+            ]).sort_values(
+                by="Échecs",
+                ascending=True
+            )
+
+            st.bar_chart(
+                failure_dataframe.set_index("DAG"),
+                width="stretch",
+                horizontal=True
+            )
+
+    with table_column:
+        with st.container(border=True):
+            st.markdown("#### Derniers incidents")
+            st.dataframe(
+                prepare_failures_dataframe(failures),
+                width="stretch",
+                hide_index=True
+            )
+
+    # Bas : détail technique
 
     with st.expander("Détail technique brut"):
         st.json(failures)
@@ -1085,8 +1653,12 @@ def clear_pipeline_cache() -> None:
 def render_pipeline_page() -> None:
     """Affiche la page de supervision du pipeline."""
 
+    # Mise en page générale
+
     apply_dashboard_layout(accent="blue")
     render_header()
+
+    # Navigation principale
 
     overview_tab, kpi_tab, runs_tab, failures_tab = st.tabs([
         "📡 Vue générale",
@@ -1095,12 +1667,16 @@ def render_pipeline_page() -> None:
         "🚨 Incidents"
     ])
 
+    # Onglet supérieur : vue générale
+
     with overview_tab:
         render_health_section()
         st.divider()
         render_dag_overview_section()
         st.divider()
         render_run_summary_section()
+
+    # Onglet supérieur : KPI et qualité
 
     with kpi_tab:
         summary_tab, quality_tab, sources_tab, history_tab = st.tabs([
@@ -1111,7 +1687,7 @@ def render_pipeline_page() -> None:
         ])
 
         with summary_tab:
-            render_pipeline_kpi_section()
+            render_pipeline_kpi_dashboard()
 
         with quality_tab:
             render_pipeline_quality_kpi_section()
@@ -1122,11 +1698,17 @@ def render_pipeline_page() -> None:
         with history_tab:
             render_pipeline_history_kpi_section()
 
+    # Onglet supérieur : exécutions et tâches
+
     with runs_tab:
         render_runs_section()
 
+    # Onglet supérieur : incidents
+
     with failures_tab:
         render_failures_section()
+
+    # Bas de page : actualisation
 
     render_refresh_section(
         button_label="🔄 Actualiser la supervision",

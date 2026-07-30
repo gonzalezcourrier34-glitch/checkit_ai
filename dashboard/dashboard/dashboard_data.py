@@ -141,6 +141,29 @@ RATE_COLUMN_LABELS = {
     "feature_rate": "Features"
 }
 
+COVERAGE_DONUT_FIELDS = [
+    (
+        "Images",
+        "with_image_rate",
+        "Articles disposant d'au moins une image"
+    ),
+    (
+        "Labels",
+        "with_label_rate",
+        "Articles disposant d'au moins un label"
+    ),
+    (
+        "Features",
+        "with_feature_rate",
+        "Articles disposant de features calculées"
+    ),
+    (
+        "Contenu",
+        "with_content_rate",
+        "Articles disposant d'un contenu textuel"
+    )
+]
+
 
 # Cache
 
@@ -295,6 +318,8 @@ def load_article_details(
 def render_header() -> None:
     """Affiche l'en-tête de la page Données."""
 
+    # Haut de page
+
     render_page_header(
         eyebrow="Observatoire des données",
         title="🗄️ Données CheckIt.AI",
@@ -309,6 +334,389 @@ def render_header() -> None:
             "Qualité des données"
         ]
     )
+
+
+# Visualisation
+
+def normalize_numeric_series(
+    dataframe: pd.DataFrame,
+    column: str
+) -> pd.Series:
+    """Retourne une série numérique exploitable."""
+
+    if column not in dataframe.columns:
+        return pd.Series(dtype="float64")
+
+    return pd.to_numeric(
+        dataframe[column],
+        errors="coerce"
+    ).fillna(0).clip(lower=0)
+
+
+def normalize_boolean_series(
+    dataframe: pd.DataFrame,
+    column: str
+) -> pd.Series:
+    """Retourne une série booléenne normalisée."""
+
+    if column not in dataframe.columns:
+        return pd.Series(dtype="bool")
+
+    return dataframe[column].map(
+        lambda value: str(value).strip().lower() in {
+            "1",
+            "true",
+            "t",
+            "yes",
+            "oui"
+        }
+    )
+
+
+def prepare_distribution_dataframe(
+    dataframe: pd.DataFrame,
+    *,
+    category_column: str,
+    value_column: str
+) -> pd.DataFrame:
+    """Prépare une répartition pour son affichage graphique."""
+
+    if dataframe.empty:
+        return dataframe
+
+    prepared_dataframe = dataframe[[
+        category_column,
+        value_column
+    ]].copy()
+    prepared_dataframe[category_column] = (
+        prepared_dataframe[category_column]
+        .fillna("Non renseigné")
+        .astype(str)
+    )
+    prepared_dataframe[value_column] = pd.to_numeric(
+        prepared_dataframe[value_column],
+        errors="coerce"
+    ).fillna(0).clip(lower=0)
+
+    return prepared_dataframe.sort_values(
+        value_column,
+        ascending=False
+    )
+
+
+def render_distribution_summary(
+    dataframe: pd.DataFrame,
+    *,
+    category_column: str,
+    value_column: str,
+    total_label: str,
+    category_label: str
+) -> None:
+    """Affiche les principaux indicateurs d'une répartition."""
+
+    if dataframe.empty:
+        return
+
+    total_value = int(dataframe[value_column].sum())
+    dominant_row = dataframe.iloc[0]
+    dominant_share = (
+        float(dominant_row[value_column]) / total_value
+        if total_value > 0
+        else 0
+    )
+
+    render_metric_cards(
+        [
+            (
+                total_label,
+                format_number(total_value)
+            ),
+            (
+                category_label,
+                format_number(len(dataframe))
+            ),
+            (
+                "Catégorie principale",
+                str(dominant_row[category_column])
+            ),
+            (
+                "Part principale",
+                format_percentage(dominant_share)
+            )
+        ],
+        columns_count=4
+    )
+
+
+def render_horizontal_distribution_chart(
+    dataframe: pd.DataFrame,
+    *,
+    category_column: str,
+    value_column: str,
+    title: str,
+    category_axis_label: str,
+    value_axis_label: str
+) -> None:
+    """Affiche une répartition sous forme d'histogramme horizontal."""
+
+    st.markdown(f"#### {title}")
+
+    if dataframe.empty:
+        st.info("Aucune donnée n'est disponible.")
+        return
+
+    st.bar_chart(
+        dataframe,
+        x=category_column,
+        y=value_column,
+        horizontal=True,
+        width="stretch",
+        height=max(320, len(dataframe) * 42),
+        x_label=value_axis_label,
+        y_label=category_axis_label
+    )
+
+
+def render_distribution_table(
+    dataframe: pd.DataFrame,
+    *,
+    rename_columns: dict[str, str]
+) -> None:
+    """Affiche le détail tabulaire d'une répartition."""
+
+    st.markdown("#### Détail")
+
+    visible_columns = [
+        column
+        for column in rename_columns
+        if column in dataframe.columns
+    ]
+
+    if not visible_columns:
+        st.info("Aucun détail n'est disponible.")
+        return
+
+    st.dataframe(
+        dataframe[visible_columns].rename(
+            columns=rename_columns
+        ),
+        width="stretch",
+        hide_index=True
+    )
+
+
+def normalize_coverage_rate(value: Any) -> float:
+    """Normalise un taux de couverture entre zéro et un."""
+
+    try:
+        rate = float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+    if rate > 1:
+        rate /= 100
+
+    return min(1.0, max(0.0, rate))
+
+
+def render_coverage_donut(
+    *,
+    title: str,
+    rate: float,
+    help_text: str,
+    key: str
+) -> None:
+    """Affiche un taux de couverture sous forme d'anneau."""
+
+    # Calcul du taux
+
+    normalized_rate = normalize_coverage_rate(rate)
+    percentage = normalized_rate * 100
+    percentage_label = (
+        f"{percentage:.1f} %"
+        .replace(".", ",")
+    )
+
+    # Données du camembert
+
+    chart_data = pd.DataFrame([
+        {
+            "Couverture": "Couvert",
+            "Valeur": normalized_rate
+        },
+        {
+            "Couverture": "Non couvert",
+            "Valeur": 1 - normalized_rate
+        }
+    ])
+
+    # Configuration du camembert
+
+    chart_spec = {
+        "height": 180,
+        "mark": {
+            "type": "arc",
+            "innerRadius": 52,
+            "outerRadius": 76,
+            "cornerRadius": 4
+        },
+        "encoding": {
+            "theta": {
+                "field": "Valeur",
+                "type": "quantitative",
+                "stack": True
+            },
+            "color": {
+                "field": "Couverture",
+                "type": "nominal",
+                "scale": {
+                    "domain": [
+                        "Couvert",
+                        "Non couvert"
+                    ],
+                    "range": [
+                        "#14B8A6",
+                        "#E5E7EB"
+                    ]
+                },
+                "legend": None
+            },
+            "tooltip": [
+                {
+                    "field": "Couverture",
+                    "type": "nominal",
+                    "title": "État"
+                },
+                {
+                    "field": "Valeur",
+                    "type": "quantitative",
+                    "title": "Part",
+                    "format": ".1%"
+                }
+            ]
+        },
+        "view": {
+            "stroke": None
+        }
+    }
+
+    # Affichage
+
+    with st.container(border=True):
+
+        # Haut : titre
+
+        st.markdown(f"##### {title}")
+
+        # Centre : camembert
+
+        st.vega_lite_chart(
+            chart_data,
+            chart_spec,
+            width="stretch",
+            key=key
+        )
+
+        # Bas : valeur du camembert
+
+        st.markdown(
+            (
+                "<p style='"
+                "text-align:center;"
+                "font-size:1.35rem;"
+                "font-weight:700;"
+                "margin-top:-8px;"
+                "margin-bottom:12px;"
+                "'>"
+                f"{percentage_label}"
+                "</p>"
+            ),
+            unsafe_allow_html=True
+        )
+
+        # Bas : description
+
+        st.caption(help_text)
+
+
+def render_coverage_donuts(
+    completeness: dict[str, Any]
+) -> None:
+    """Affiche les principales couvertures sous forme d'anneaux."""
+
+    # Haut : titre
+
+    st.markdown("### Couvertures")
+    st.caption(
+        "Part des articles disposant de chaque famille de données."
+    )
+
+    # Validation des données
+
+    if not completeness:
+        st.info("Aucune donnée de couverture n'est disponible.")
+        return
+
+    # Lignes de camemberts
+
+    for row_index in range(0, len(COVERAGE_DONUT_FIELDS), 2):
+        # Colonnes gauche et droite
+
+        columns = st.columns(2)
+        row_fields = COVERAGE_DONUT_FIELDS[
+            row_index:row_index + 2
+        ]
+
+        # Camemberts de la ligne
+
+        for column, field in zip(columns, row_fields):
+            title, rate_field, help_text = field
+
+            with column:
+                render_coverage_donut(
+                    title=title,
+                    rate=normalize_coverage_rate(
+                        completeness.get(rate_field)
+                    ),
+                    help_text=help_text,
+                    key=f"coverage_donut_{rate_field}"
+                )
+
+
+def render_data_kpi_dashboard() -> None:
+    """Affiche les KPI à gauche et les couvertures à droite."""
+
+    # Chargement des couvertures
+
+    try:
+        completeness = load_data_completeness()
+    except Exception as error:
+        logger.warning(
+            "Impossible de charger les couvertures KPI : %s",
+            error
+        )
+        completeness = {}
+
+    # Mise en page principale
+
+    kpi_column, coverage_column = st.columns(
+        [3, 2],
+        gap="large"
+    )
+
+    # Colonne de gauche : indicateurs numériques
+
+    with kpi_column:
+        st.markdown("### Indicateurs clés")
+        st.caption(
+            "Volumes, qualité et disponibilité générale du corpus."
+        )
+        render_data_kpi_section()
+
+    # Colonne de droite : camemberts
+
+    with coverage_column:
+        render_coverage_donuts(completeness)
 
 
 # Sources
@@ -336,18 +744,119 @@ def render_sources_section() -> None:
         )
         return
 
-    source_column, type_column = st.columns([2, 1])
+    render_sources_summary(sources)
+
+    # Colonne de gauche : volumes par source
+    # Colonne de droite : types de source
+
+    source_column, type_column = st.columns([3, 2])
 
     with source_column:
         with st.container(border=True):
-            st.subheader("Volumes par source")
-            render_sources_table(sources)
+            render_source_volume_chart(sources)
 
     with type_column:
         with st.container(border=True):
-            st.subheader("Types de source")
             render_source_type_chart(source_types)
 
+    # Bas : tableau détaillé
+
+    with st.expander("Afficher le détail des sources"):
+        render_sources_table(sources)
+
+
+def render_sources_summary(
+    sources: list[dict[str, Any]]
+) -> None:
+    """Affiche les principaux indicateurs liés aux sources."""
+
+    dataframe = rows_to_dataframe(sources)
+
+    if dataframe.empty:
+        return
+
+    article_total = normalize_numeric_series(
+        dataframe,
+        "article_count"
+    ).sum()
+    image_total = normalize_numeric_series(
+        dataframe,
+        "image_count"
+    ).sum()
+    active_sources = normalize_boolean_series(
+        dataframe,
+        "is_active"
+    ).sum()
+
+    render_metric_cards(
+        [
+            (
+                "Sources enregistrées",
+                format_number(len(dataframe))
+            ),
+            (
+                "Sources actives",
+                format_number(int(active_sources))
+            ),
+            (
+                "Articles collectés",
+                format_number(int(article_total))
+            ),
+            (
+                "Images associées",
+                format_number(int(image_total))
+            )
+        ],
+        columns_count=4
+    )
+
+
+def render_source_volume_chart(
+    sources: list[dict[str, Any]]
+) -> None:
+    """Affiche les volumes d'articles par source."""
+
+    st.subheader("Volumes par source")
+    st.caption(
+        "Les sources les plus productives apparaissent en premier."
+    )
+
+    dataframe = rows_to_dataframe(sources)
+
+    required_columns = {
+        "display_name",
+        "article_count"
+    }
+
+    if dataframe.empty or not required_columns.issubset(
+        dataframe.columns
+    ):
+        st.info("Aucun volume par source n'est disponible.")
+        return
+
+    chart_data = dataframe[[
+        "display_name",
+        "article_count"
+    ]].copy()
+    chart_data["article_count"] = pd.to_numeric(
+        chart_data["article_count"],
+        errors="coerce"
+    ).fillna(0)
+    chart_data = chart_data.sort_values(
+        "article_count",
+        ascending=False
+    )
+
+    st.bar_chart(
+        chart_data,
+        x="display_name",
+        y="article_count",
+        horizontal=True,
+        width="stretch",
+        height=max(340, len(chart_data) * 38),
+        x_label="Nombre d'articles",
+        y_label="Source"
+    )
 
 def render_sources_table(
     sources: list[dict[str, Any]]
@@ -399,6 +908,11 @@ def render_source_type_chart(
 ) -> None:
     """Affiche la répartition par type de source."""
 
+    st.subheader("Types de source")
+    st.caption(
+        "Cette vue compare le poids des APIs, RSS, datasets et scrapers."
+    )
+
     dataframe = rows_to_dataframe(rows)
 
     if dataframe.empty:
@@ -416,13 +930,28 @@ def render_source_type_chart(
         )
         return
 
-    chart_data = dataframe.set_index(
-        "source_type"
-    )[["article_count"]]
+    chart_data = dataframe[[
+        "source_type",
+        "article_count"
+    ]].copy()
+    chart_data["article_count"] = pd.to_numeric(
+        chart_data["article_count"],
+        errors="coerce"
+    ).fillna(0)
+    chart_data = chart_data.sort_values(
+        "article_count",
+        ascending=False
+    )
 
     st.bar_chart(
         chart_data,
-        width="stretch"
+        x="source_type",
+        y="article_count",
+        horizontal=True,
+        width="stretch",
+        height=max(300, len(chart_data) * 55),
+        x_label="Nombre d'articles",
+        y_label="Type de source"
     )
 
 
@@ -437,6 +966,8 @@ def render_distributions_section() -> None:
         "Lecture des données selon leur langue, label et statut qualité."
     )
 
+    # Navigation des répartitions
+
     language_tab, label_tab, quality_tab, image_tab = st.tabs([
         "🌍 Langues",
         "🏷️ Labels",
@@ -449,6 +980,8 @@ def render_distributions_section() -> None:
 
     with label_tab:
         render_label_distribution()
+
+    # Onglet supérieur : qualité et complétude
 
     with quality_tab:
         render_quality_distribution()
@@ -478,30 +1011,45 @@ def render_language_distribution() -> None:
         st.info("Aucune langue n'est renseignée.")
         return
 
-    chart_column, table_column = st.columns([2, 1])
+    chart_data = prepare_distribution_dataframe(
+        dataframe,
+        category_column="language",
+        value_column="article_count"
+    )
+
+    render_distribution_summary(
+        chart_data,
+        category_column="language",
+        value_column="article_count",
+        total_label="Articles",
+        category_label="Langues"
+    )
+
+    # Colonne de gauche : graphique
+    # Colonne de droite : tableau
+
+    chart_column, table_column = st.columns([3, 2])
 
     with chart_column:
         with st.container(border=True):
-            chart_data = dataframe.set_index(
-                "language"
-            )[["article_count"]]
-
-            st.bar_chart(
+            render_horizontal_distribution_chart(
                 chart_data,
-                width="stretch"
+                category_column="language",
+                value_column="article_count",
+                title="Articles par langue",
+                category_axis_label="Langue",
+                value_axis_label="Nombre d'articles"
             )
 
     with table_column:
         with st.container(border=True):
-            st.dataframe(
-                dataframe.rename(columns={
+            render_distribution_table(
+                chart_data,
+                rename_columns={
                     "language": "Langue",
                     "article_count": "Articles"
-                }),
-                width="stretch",
-                hide_index=True
+                }
             )
-
 
 def render_label_distribution() -> None:
     """Affiche la répartition des labels actifs."""
@@ -524,32 +1072,54 @@ def render_label_distribution() -> None:
         st.info("Aucun label actif n'est enregistré.")
         return
 
-    chart_column, table_column = st.columns([2, 1])
+    if not {"label", "label_count"}.issubset(dataframe.columns):
+        st.info("La répartition des labels est incomplète.")
+        return
+
+    chart_data = dataframe.groupby(
+        "label",
+        as_index=False
+    )["label_count"].sum()
+    chart_data = prepare_distribution_dataframe(
+        chart_data,
+        category_column="label",
+        value_column="label_count"
+    )
+
+    render_distribution_summary(
+        chart_data,
+        category_column="label",
+        value_column="label_count",
+        total_label="Labels actifs",
+        category_label="Valeurs distinctes"
+    )
+
+    # Colonne de gauche : graphique
+    # Colonne de droite : tableau
+
+    chart_column, table_column = st.columns([3, 2])
 
     with chart_column:
         with st.container(border=True):
-            chart_data = dataframe.groupby(
-                "label",
-                as_index=True
-            )["label_count"].sum().to_frame()
-
-            st.bar_chart(
+            render_horizontal_distribution_chart(
                 chart_data,
-                width="stretch"
+                category_column="label",
+                value_column="label_count",
+                title="Répartition des labels",
+                category_axis_label="Label",
+                value_axis_label="Nombre d'occurrences"
             )
 
     with table_column:
         with st.container(border=True):
-            st.dataframe(
-                dataframe.rename(columns={
+            render_distribution_table(
+                dataframe,
+                rename_columns={
                     "label": "Label",
                     "label_type": "Type",
                     "label_count": "Nombre"
-                }),
-                width="stretch",
-                hide_index=True
+                }
             )
-
 
 def render_quality_distribution() -> None:
     """Affiche les statuts qualité des articles."""
@@ -572,22 +1142,55 @@ def render_quality_distribution() -> None:
         st.info("Aucun statut qualité n'est renseigné.")
         return
 
+    if not {
+        "data_quality_status",
+        "article_count"
+    }.issubset(dataframe.columns):
+        st.info("La répartition qualité est incomplète.")
+        return
+
     dataframe["Statut"] = dataframe[
         "data_quality_status"
     ].map(format_status)
 
-    with st.container(border=True):
-        st.dataframe(
-            dataframe[[
-                "Statut",
-                "article_count"
-            ]].rename(columns={
-                "article_count": "Articles"
-            }),
-            width="stretch",
-            hide_index=True
-        )
+    chart_data = prepare_distribution_dataframe(
+        dataframe[["Statut", "article_count"]],
+        category_column="Statut",
+        value_column="article_count"
+    )
 
+    render_distribution_summary(
+        chart_data,
+        category_column="Statut",
+        value_column="article_count",
+        total_label="Articles évalués",
+        category_label="Statuts qualité"
+    )
+
+    # Colonne de gauche : graphique
+    # Colonne de droite : tableau
+
+    chart_column, table_column = st.columns([3, 2])
+
+    with chart_column:
+        with st.container(border=True):
+            render_horizontal_distribution_chart(
+                chart_data,
+                category_column="Statut",
+                value_column="article_count",
+                title="Qualité des articles",
+                category_axis_label="Statut",
+                value_axis_label="Nombre d'articles"
+            )
+
+    with table_column:
+        with st.container(border=True):
+            render_distribution_table(
+                chart_data,
+                rename_columns={
+                    "article_count": "Articles"
+                }
+            )
 
 def render_image_distribution() -> None:
     """Affiche les statuts de validation des images."""
@@ -610,28 +1213,103 @@ def render_image_distribution() -> None:
         st.info("Aucune image n'est enregistrée.")
         return
 
+    required_columns = {
+        "validation_status",
+        "is_valid",
+        "image_count"
+    }
+
+    if not required_columns.issubset(dataframe.columns):
+        st.info("La répartition des images est incomplète.")
+        return
+
     dataframe["Valide"] = dataframe["is_valid"].map(
         lambda value: format_boolean(
             is_valid_image_row({"is_valid": value})
         )
     )
-
     dataframe["Statut"] = dataframe[
         "validation_status"
     ].map(format_status)
 
-    with st.container(border=True):
-        st.dataframe(
-            dataframe[[
-                "Statut",
-                "Valide",
-                "image_count"
-            ]].rename(columns={
-                "image_count": "Images"
-            }),
-            width="stretch",
-            hide_index=True
-        )
+    chart_data = dataframe.groupby(
+        "Statut",
+        as_index=False
+    )["image_count"].sum()
+    chart_data = prepare_distribution_dataframe(
+        chart_data,
+        category_column="Statut",
+        value_column="image_count"
+    )
+
+    valid_count = int(
+        dataframe.loc[
+            dataframe["is_valid"].map(
+                lambda value: is_valid_image_row(
+                    {"is_valid": value}
+                )
+            ),
+            "image_count"
+        ].sum()
+    )
+    total_count = int(
+        pd.to_numeric(
+            dataframe["image_count"],
+            errors="coerce"
+        ).fillna(0).sum()
+    )
+    valid_rate = (
+        valid_count / total_count
+        if total_count > 0
+        else 0
+    )
+
+    render_metric_cards(
+        [
+            (
+                "Images analysées",
+                format_number(total_count)
+            ),
+            (
+                "Images valides",
+                format_number(valid_count)
+            ),
+            (
+                "Taux de validation",
+                format_percentage(valid_rate)
+            )
+        ],
+        columns_count=3
+    )
+
+    # Colonne de gauche : graphique
+    # Colonne de droite : tableau
+
+    chart_column, table_column = st.columns([3, 2])
+
+    with chart_column:
+        with st.container(border=True):
+            render_horizontal_distribution_chart(
+                chart_data,
+                category_column="Statut",
+                value_column="image_count",
+                title="Validation des images",
+                category_axis_label="Statut",
+                value_axis_label="Nombre d'images"
+            )
+
+    with table_column:
+        with st.container(border=True):
+            render_distribution_table(
+                dataframe[[
+                    "Statut",
+                    "Valide",
+                    "image_count"
+                ]],
+                rename_columns={
+                    "image_count": "Images"
+                }
+            )
 
 
 # Complétude
@@ -704,19 +1382,69 @@ def render_global_completeness(
     """Affiche la complétude globale des articles."""
 
     dataframe = build_completeness_dataframe(completeness)
-    chart_column, table_column = st.columns([2, 1])
+
+    if dataframe.empty:
+        st.info("Aucune donnée de complétude n'est disponible.")
+        return
+
+    mean_rate = float(
+        dataframe["Taux de complétude"].mean()
+    )
+    complete_fields = int(
+        (dataframe["Taux de complétude"] >= 0.95).sum()
+    )
+    weakest_row = dataframe.sort_values(
+        "Taux de complétude",
+        ascending=True
+    ).iloc[0]
+
+    render_metric_cards(
+        [
+            (
+                "Complétude moyenne",
+                format_percentage(mean_rate)
+            ),
+            (
+                "Champs à 95 % ou plus",
+                f"{complete_fields} / {len(dataframe)}"
+            ),
+            (
+                "Champ le moins couvert",
+                str(weakest_row["Champ"])
+            )
+        ],
+        columns_count=3
+    )
+
+    # Colonne de gauche : graphique
+    # Colonne de droite : tableau
+
+    chart_column, table_column = st.columns([3, 2])
 
     with chart_column:
         with st.container(border=True):
             st.markdown("#### Vue synthétique")
+            st.caption(
+                "Les barres rendent visibles les lacunes de couverture."
+            )
 
-            chart_data = dataframe.set_index(
-                "Champ"
-            )[["Taux de complétude"]]
+            chart_data = dataframe[[
+                "Champ",
+                "Taux de complétude"
+            ]].sort_values(
+                "Taux de complétude",
+                ascending=False
+            )
 
             st.bar_chart(
                 chart_data,
-                width="stretch"
+                x="Champ",
+                y="Taux de complétude",
+                horizontal=True,
+                width="stretch",
+                height=max(340, len(chart_data) * 45),
+                x_label="Taux de complétude",
+                y_label="Champ"
             )
 
     with table_column:
@@ -742,7 +1470,6 @@ def render_global_completeness(
                 width="stretch",
                 hide_index=True
             )
-
 
 def render_completeness_by_source_type() -> None:
     """Affiche la complétude par famille de source."""
@@ -838,7 +1565,9 @@ def render_specialized_completeness(
     title: str,
     empty_message: str
 ) -> None:
-    """Affiche un tableau spécialisé de complétude."""
+    """Affiche une synthèse spécialisée de complétude."""
+
+    # Validation des données
 
     if not completeness:
         st.info(empty_message)
@@ -858,28 +1587,59 @@ def render_specialized_completeness(
     ]
 
     dataframe = pd.DataFrame(rows)
-
-    dataframe["Valeurs renseignées"] = (
-        dataframe["Valeurs renseignées"].map(
-            format_number
-        )
+    chart_data = dataframe[[
+        "Champ",
+        "Taux de complétude"
+    ]].sort_values(
+        "Taux de complétude",
+        ascending=False
     )
 
-    dataframe["Taux de complétude"] = (
-        dataframe["Taux de complétude"].map(
-            format_percentage
-        )
-    )
+    # Colonne de gauche : graphique
+    # Colonne de droite : tableau
 
-    with st.container(border=True):
-        st.markdown(f"#### {title}")
+    chart_column, table_column = st.columns([3, 2])
 
-        st.dataframe(
-            dataframe,
-            width="stretch",
-            hide_index=True
-        )
+    with chart_column:
+        with st.container(border=True):
+            st.markdown(f"#### {title}")
+            st.caption(
+                "La longueur des barres montre immédiatement les "
+                "métadonnées manquantes."
+            )
 
+            st.bar_chart(
+                chart_data,
+                x="Champ",
+                y="Taux de complétude",
+                horizontal=True,
+                width="stretch",
+                height=max(340, len(chart_data) * 38),
+                x_label="Taux de complétude",
+                y_label="Champ"
+            )
+
+    with table_column:
+        with st.container(border=True):
+            st.markdown("#### Valeurs détaillées")
+
+            display_dataframe = dataframe.copy()
+            display_dataframe["Valeurs renseignées"] = (
+                display_dataframe["Valeurs renseignées"].map(
+                    format_number
+                )
+            )
+            display_dataframe["Taux de complétude"] = (
+                display_dataframe["Taux de complétude"].map(
+                    format_percentage
+                )
+            )
+
+            st.dataframe(
+                display_dataframe,
+                width="stretch",
+                hide_index=True
+            )
 
 def render_image_completeness() -> None:
     """Affiche la complétude technique des images."""
@@ -988,6 +1748,8 @@ def render_completeness_section() -> None:
         "Analyse globale, par famille, par source et par domaine technique."
     )
 
+    # Chargement des couvertures
+
     try:
         completeness = load_data_completeness()
     except Exception as error:
@@ -1001,9 +1763,13 @@ def render_completeness_section() -> None:
         )
         return
 
+    # Validation des données
+
     if not completeness:
         st.info("Aucune donnée de complétude n'est disponible.")
         return
+
+    # Navigation de la complétude
 
     global_tab, type_tab, source_tab, image_tab, metadata_tab = st.tabs([
         "🌐 Globale",
@@ -1039,6 +1805,8 @@ def render_history_section() -> None:
         "Historique des extractions",
         "Évolution quotidienne du volume d'articles collectés."
     )
+
+    # Haut : filtre de période
 
     with st.container(border=True):
         days = st.slider(
@@ -1079,6 +1847,8 @@ def render_history_section() -> None:
         "extraction_date"
     )[["article_count"]]
 
+    # Centre : graphique historique
+
     with st.container(border=True):
         st.line_chart(
             chart_data,
@@ -1092,6 +1862,8 @@ def render_history_section() -> None:
     average_articles = float(
         dataframe["article_count"].mean()
     )
+
+    # Bas : indicateurs historiques
 
     render_metric_cards(
         [
@@ -1137,6 +1909,40 @@ def render_features_section() -> None:
         st.info("Aucune feature n'est enregistrée.")
         return
 
+    required_columns = {
+        "feature_group",
+        "feature_count"
+    }
+
+    if required_columns.issubset(dataframe.columns):
+        grouped_dataframe = dataframe.groupby(
+            "feature_group",
+            as_index=False
+        )["feature_count"].sum()
+        grouped_dataframe = prepare_distribution_dataframe(
+            grouped_dataframe,
+            category_column="feature_group",
+            value_column="feature_count"
+        )
+
+        render_distribution_summary(
+            grouped_dataframe,
+            category_column="feature_group",
+            value_column="feature_count",
+            total_label="Features générées",
+            category_label="Groupes de features"
+        )
+
+        with st.container(border=True):
+            render_horizontal_distribution_chart(
+                grouped_dataframe,
+                category_column="feature_group",
+                value_column="feature_count",
+                title="Features par groupe",
+                category_axis_label="Groupe",
+                value_axis_label="Nombre de features"
+            )
+
     rename_columns = {
         "feature_group": "Groupe",
         "feature_name": "Feature",
@@ -1150,7 +1956,9 @@ def render_features_section() -> None:
         if column in dataframe.columns
     ]
 
-    with st.container(border=True):
+    # Bas : tableau détaillé
+
+    with st.expander("Afficher le détail des features"):
         st.dataframe(
             dataframe[visible_columns].rename(
                 columns=rename_columns
@@ -1186,12 +1994,16 @@ def render_articles_section() -> None:
 
         return
 
+    # Haut : filtres
+
     filters = render_article_filters(
         sources,
         languages,
         labels,
         qualities
     )
+
+    # Bas : tableau des résultats
 
     render_article_results(filters)
 
@@ -1224,6 +2036,8 @@ def render_article_filters(
         "data_quality_status"
     )
 
+    # Formulaire de filtres
+
     with st.container(border=True):
         with st.form(
             "article_filters_form",
@@ -1234,6 +2048,8 @@ def render_article_filters(
                 placeholder="Titre, contenu ou auteur",
                 key="article_search"
             )
+
+            # Première ligne de filtres
 
             first_row = st.columns(4)
 
@@ -1264,6 +2080,8 @@ def render_article_filters(
                     options=["Toutes", *quality_options],
                     key="article_quality"
                 )
+
+            # Deuxième ligne de filtres
 
             second_row = st.columns(4)
 
@@ -1408,6 +2226,8 @@ def render_article_results(
         f"page {filters['page']} sur {page_count}"
     )
 
+    # Tableau des articles
+
     event = st.dataframe(
         prepare_articles_dataframe(articles),
         width="stretch",
@@ -1518,6 +2338,9 @@ def render_article_details(
         str(article.get("title") or "Article sans titre")
     )
 
+    # Colonne de gauche : contenu
+    # Colonne de droite : métadonnées
+
     content_column, metadata_column = st.columns([2, 1])
 
     with content_column:
@@ -1526,6 +2349,8 @@ def render_article_details(
     with metadata_column:
         with st.container(border=True):
             render_article_metadata(article)
+
+    # Bas : données associées
 
     render_article_related_data(article)
 
@@ -1624,6 +2449,8 @@ def render_article_related_data(
 ) -> None:
     """Affiche les images, labels, features et prédictions."""
 
+    # Navigation des données associées
+
     images_tab, labels_tab, features_tab, predictions_tab = st.tabs([
         "🖼️ Images",
         "🏷️ Labels",
@@ -1705,8 +2532,12 @@ def clear_data_cache() -> None:
 def render_data_page() -> None:
     """Affiche la page de consultation des données."""
 
+    # Mise en page générale
+
     apply_dashboard_layout(accent="teal")
     render_header()
+
+    # Navigation principale
 
     overview_tab, kpi_tab, quality_tab, articles_tab = st.tabs([
         "📊 Vue générale",
@@ -1714,6 +2545,8 @@ def render_data_page() -> None:
         "✅ Qualité et complétude",
         "📰 Explorateur"
     ])
+
+    # Onglet supérieur : vue générale
 
     with overview_tab:
         render_history_section()
@@ -1724,8 +2557,12 @@ def render_data_page() -> None:
         st.divider()
         render_features_section()
 
+    # Onglet supérieur : KPI
+
     with kpi_tab:
-        render_data_kpi_section()
+        render_data_kpi_dashboard()
+
+    # Onglet supérieur : qualité et complétude
 
     with quality_tab:
         render_completeness_section()
@@ -1734,8 +2571,12 @@ def render_data_page() -> None:
         st.divider()
         render_image_distribution()
 
+    # Onglet supérieur : explorateur
+
     with articles_tab:
         render_articles_section()
+
+    # Bas de page : actualisation
 
     render_refresh_section(
         button_label="🔄 Actualiser les données",

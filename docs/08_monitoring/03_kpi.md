@@ -1,147 +1,174 @@
-# Indicateurs de suivi (KPI)
+# Architecture de supervision
 
-# Introduction
+## Introduction
 
-Afin de mesurer le bon fonctionnement du pipeline, plusieurs indicateurs clés de performance (Key Performance Indicators ou KPI) sont calculés au cours des différentes étapes de traitement.
+Le monitoring de **CheckIt.AI** repose sur plusieurs composants complémentaires permettant de superviser l'ensemble du pipeline d'acquisition.
 
-Ces indicateurs permettent de suivre l'activité du pipeline, d'évaluer la qualité des données produites et de détecter rapidement d'éventuelles anomalies.
+Chaque composant possède une responsabilité spécifique. Ensemble, ils offrent une vision globale de l'état du pipeline, des données produites et des performances observées au cours des différentes exécutions.
 
-Ils sont enregistrés au fil des exécutions et peuvent être consultés depuis le dashboard de supervision.
-
----
-
-# Indicateurs d'exécution
-
-Les premiers indicateurs concernent le déroulement général du pipeline.
-
-Ils permettent de vérifier que les différentes étapes se sont correctement exécutées.
-
-| Indicateur | Description |
-|------------|-------------|
-| Nombre d'exécutions | Nombre total de pipelines exécutés |
-| Statut de l'exécution | Succès ou échec du pipeline |
-| Date de début | Heure de lancement |
-| Date de fin | Heure de fin |
-| Durée totale | Temps nécessaire pour exécuter le pipeline |
-
-Ces informations permettent d'obtenir une vision globale de l'activité du système.
+Cette architecture facilite la détection des anomalies, les opérations de maintenance et contribue à la traçabilité des traitements.
 
 ---
 
-# Indicateurs d'extraction
+## Architecture générale
 
-Les indicateurs d'extraction permettent de suivre la collecte des données.
+La supervision s'appuie sur les différents composants du projet.
 
-Ils renseignent notamment sur :
+```mermaid
+flowchart LR
 
-- le nombre de sources interrogées ;
-- le nombre d'articles analysés ;
-- le nombre d'articles extraits ;
-- le nombre d'articles rejetés ;
-- les erreurs rencontrées lors de la collecte.
+S[Sources de données]
 
-Ces mesures permettent de détecter rapidement une source devenue indisponible ou une baisse anormale du volume de données collectées.
+S --> E[Extraction]
 
----
+E --> T[Transformation]
 
-# Indicateurs de transformation
+T --> L[Chargement PostgreSQL]
 
-La phase de transformation produit également plusieurs indicateurs.
+L --> Q[Contrôle qualité]
 
-Ils permettent de mesurer :
+Q --> DB[(PostgreSQL)]
 
-- le nombre d'articles transformés ;
-- le nombre de doublons supprimés ;
-- le nombre de labels générés ;
-- le nombre de caractéristiques calculées ;
-- les éventuels rejets liés aux validations.
+E --> R1[Rapport d'extraction]
 
-Ces informations permettent de vérifier que les données sont correctement préparées avant leur chargement dans la base.
+T --> R2[Rapport de transformation]
 
----
+L --> R3[Rapport de chargement]
 
-# Indicateurs de chargement
+Q --> R4[Rapport qualité]
 
-Le chargement dans PostgreSQL est suivi afin de garantir l'intégrité des données.
+E --> LOGS[Logs]
 
-Les principaux indicateurs sont :
+T --> LOGS
 
-- le nombre d'articles enregistrés ;
-- le nombre d'images enregistrées ;
-- le nombre de labels enregistrés ;
-- le nombre de caractéristiques enregistrées ;
-- les éventuelles erreurs d'insertion.
+L --> LOGS
 
-Ces indicateurs permettent de vérifier que les données produites sont correctement stockées.
+Q --> LOGS
 
----
+AIRFLOW[Apache Airflow]
 
-# Indicateurs de qualité
+AIRFLOW --> E
+AIRFLOW --> T
+AIRFLOW --> L
+AIRFLOW --> Q
 
-Le contrôle qualité calcule plusieurs mesures destinées à évaluer la qualité des données produites.
+DB --> DASH[Dashboard Streamlit]
 
-Les principaux indicateurs sont notamment :
+LOGS --> DASH
 
-- nombre d'articles valides ;
-- nombre d'articles invalides ;
-- taux de validation ;
-- taux de rejet ;
-- qualité globale du lot.
+R1 --> DASH
+R2 --> DASH
+R3 --> DASH
+R4 --> DASH
 
-Ces indicateurs permettent de vérifier que les données répondent aux critères définis avant leur exploitation.
+AIRFLOW --> DASH
+```
+
+Cette organisation permet de suivre l'ensemble du cycle de vie d'un lot de données, depuis son extraction jusqu'à sa validation finale.
 
 ---
 
-# Indicateurs liés aux images
+## Apache Airflow
 
-Les images constituent une composante importante du pipeline multimodal.
+Apache Airflow constitue le cœur du dispositif de supervision.
 
-Le monitoring suit notamment :
+Il orchestre les différents DAGs du pipeline et fournit notamment :
 
-- le nombre d'images téléchargées ;
-- le nombre d'images valides ;
-- le nombre d'images invalides ;
-- les téléchargements en échec ;
-- les images absentes.
+- le statut de chaque DAG ;
+- la durée des traitements ;
+- l'historique des exécutions ;
+- les erreurs rencontrées ;
+- les journaux d'exécution.
 
-Ces indicateurs permettent d'évaluer la qualité du corpus multimodal.
-
----
-
-# Indicateurs de performance
-
-Les performances du pipeline sont également surveillées.
-
-Les principales mesures concernent :
-
-- la durée de l'extraction ;
-- la durée de la transformation ;
-- la durée du chargement ;
-- la durée du contrôle qualité ;
-- la durée totale du pipeline.
-
-Le suivi de ces valeurs facilite l'identification d'éventuels ralentissements.
+Ces informations permettent de suivre l'avancement des traitements et d'identifier rapidement les éventuels incidents.
 
 ---
 
-# Exploitation des KPI
+## Les rapports d'exécution
 
-Les indicateurs calculés sont utilisés à plusieurs niveaux.
+Chaque étape du pipeline génère un rapport JSON contenant les principales informations relatives au traitement réalisé.
 
-Ils permettent notamment de :
+Ces rapports permettent notamment de conserver :
 
-- suivre l'évolution du pipeline ;
-- détecter les anomalies ;
-- comparer plusieurs exécutions ;
-- alimenter le dashboard de supervision ;
-- faciliter les opérations de maintenance.
+- les statistiques de traitement ;
+- le nombre d'éléments produits ;
+- les temps d'exécution ;
+- les éventuelles erreurs rencontrées ;
+- les indicateurs spécifiques à chaque étape.
 
-Ils constituent ainsi un outil d'aide à la décision pour l'exploitation quotidienne du pipeline.
+Ils constituent une source d'information essentielle pour le diagnostic et l'analyse des traitements.
 
 ---
 
-# Conclusion
+## PostgreSQL
 
-Les KPI jouent un rôle central dans le dispositif de monitoring de CheckIt.AI.
+La base PostgreSQL joue un double rôle.
 
-Ils permettent de mesurer objectivement le fonctionnement du pipeline, d'évaluer la qualité des données produites et de disposer d'informations fiables pour le diagnostic et l'amélioration continue de la plateforme.
+Elle stocke les données produites par le pipeline ainsi que les informations nécessaires au suivi des traitements.
+
+On y retrouve notamment :
+
+- les exécutions du pipeline ;
+- les articles ;
+- les images ;
+- les labels ;
+- les caractéristiques ;
+- les informations utilisées pour calculer les principaux indicateurs de supervision.
+
+La base constitue ainsi une source fiable pour l'analyse des traitements et l'élaboration des tableaux de bord.
+
+---
+
+## Les journaux d'exécution
+
+Chaque composant du pipeline produit des journaux permettant de suivre précisément les traitements réalisés.
+
+Ces journaux enregistrent notamment :
+
+- les opérations effectuées ;
+- les avertissements ;
+- les erreurs ;
+- les temps de traitement ;
+- les informations utiles au diagnostic.
+
+Les logs facilitent l'identification de l'origine d'un incident et permettent de comprendre le déroulement des traitements.
+
+---
+
+## Le dashboard de supervision
+
+Le dashboard Streamlit centralise les informations issues des différents composants du pipeline.
+
+Il présente notamment :
+
+- l'état général du pipeline ;
+- les informations issues de PostgreSQL ;
+- les indicateurs de supervision ;
+- le statut des services ;
+- les statistiques générales.
+
+Cette interface offre une vision synthétique du fonctionnement du pipeline sans nécessiter un accès direct aux outils techniques. Elle constitue le point d'entrée principal pour la supervision quotidienne.
+
+---
+
+## Complémentarité des composants
+
+Chaque composant contribue à la supervision du pipeline selon son rôle.
+
+| Composant | Rôle principal |
+|-----------|----------------|
+| Apache Airflow | Orchestration et suivi des DAGs |
+| PostgreSQL | Stockage des données et des informations de suivi |
+| Rapports JSON | Traçabilité des traitements |
+| Logs | Diagnostic des incidents |
+| Dashboard Streamlit | Centralisation et visualisation des indicateurs |
+
+Cette répartition permet d'obtenir une supervision complète tout en conservant une séparation claire des responsabilités entre les différents composants.
+
+---
+
+## Conclusion
+
+L'architecture de supervision de **CheckIt.AI** repose sur plusieurs composants complémentaires assurant le suivi du pipeline à différents niveaux.
+
+L'orchestration par Apache Airflow, les rapports d'exécution, les journaux, la base PostgreSQL et le dashboard Streamlit permettent ensemble de superviser le fonctionnement du pipeline, de suivre ses performances, de contrôler la qualité des données et de faciliter les opérations de diagnostic et de maintenance.

@@ -1,47 +1,49 @@
 # Perspectives d'évolution
 
-# Introduction
+## Introduction
 
-Le dispositif de monitoring développé dans le cadre de CheckIt.AI répond aux besoins du projet en assurant le suivi des traitements, le contrôle de la qualité des données et la détection des principales anomalies.
+Le dispositif de monitoring développé dans le cadre de **CheckIt.AI** répond aux besoins du projet en assurant le suivi des traitements, le contrôle de la qualité des données et la détection des principales anomalies.
 
-Toutefois, dans un contexte de mise en production ou de montée en charge, plusieurs évolutions pourraient être envisagées afin d'améliorer encore les capacités de supervision du pipeline.
+Toutefois, dans un contexte de montée en charge ou de déploiement en production, plusieurs évolutions pourraient être envisagées afin d'améliorer les capacités de supervision, d'automatiser davantage les opérations de surveillance et de renforcer l'observabilité du pipeline.
 
 ---
 
-# Automatisation des alertes
+## Automatisation des alertes
 
-Dans la version actuelle, la supervision repose principalement sur la consultation du dashboard, des rapports d'exécution et des journaux.
+Dans sa version actuelle, la supervision repose principalement sur la consultation du dashboard, des rapports d'exécution et des journaux.
 
 Une première évolution consisterait à automatiser l'envoi de notifications lorsqu'une anomalie est détectée.
 
-Les événements pouvant déclencher une alerte sont par exemple :
+Les événements susceptibles de déclencher une alerte pourraient notamment être :
 
-- échec d'un DAG Airflow ;
-- indisponibilité d'une API ;
-- absence d'articles extraits ;
-- dépassement d'un temps d'exécution maximal ;
-- augmentation importante du taux de rejet.
+- l'échec d'un DAG Airflow ;
+- l'indisponibilité d'une API ;
+- l'absence d'articles extraits ;
+- le dépassement d'un temps d'exécution maximal ;
+- une augmentation importante du taux de rejet ;
+- une dégradation du taux de complétude des données.
 
-Ces notifications permettraient une prise en charge plus rapide des incidents.
+Ces notifications permettraient une prise en charge plus rapide des incidents et réduiraient le temps de réaction des équipes d'exploitation.
 
 ---
 
-# Supervision en temps réel
+## Supervision en continu
 
-Le monitoring actuel fournit principalement une vision de l'état des traitements après leur exécution.
+Le monitoring actuel fournit principalement une vision de l'état des traitements lors ou après leur exécution.
 
-Une évolution intéressante serait de mettre en place une supervision en temps réel permettant de suivre :
+Une évolution intéressante consisterait à mettre en place une supervision en continu permettant de suivre :
 
 - la progression des traitements ;
+- l'état des différentes tâches ;
 - les ressources utilisées ;
 - les performances du pipeline ;
 - les erreurs dès leur apparition.
 
-Cette approche faciliterait le suivi des traitements les plus longs.
+Cette approche améliorerait la visibilité sur les traitements les plus longs et faciliterait la détection précoce des anomalies.
 
 ---
 
-# Historisation des indicateurs
+## Historisation des indicateurs
 
 Le stockage des indicateurs pourrait être enrichi afin de permettre une analyse sur de longues périodes.
 
@@ -49,30 +51,32 @@ Cette historisation offrirait plusieurs possibilités :
 
 - suivre l'évolution du volume de données collectées ;
 - mesurer les performances au fil du temps ;
+- comparer plusieurs exécutions ;
 - identifier des tendances ;
 - détecter progressivement certaines anomalies.
 
-Ces analyses permettraient d'anticiper les besoins d'optimisation du pipeline.
+Ces analyses faciliteraient l'identification des évolutions du pipeline et permettraient d'anticiper les besoins d'optimisation.
 
 ---
 
-# Intégration d'outils spécialisés
+## Intégration d'outils spécialisés
 
-Le dispositif de monitoring pourrait être complété par des solutions dédiées à la supervision des infrastructures.
+Le dispositif de monitoring pourrait être complété par des solutions dédiées à la supervision des infrastructures et des applications.
 
-Parmi les outils couramment utilisés, on peut citer :
+Parmi les outils couramment utilisés, on peut notamment citer :
 
 - Prometheus pour la collecte des métriques ;
 - Grafana pour la création de tableaux de bord interactifs ;
-- Loki pour la centralisation des logs.
+- Loki pour la centralisation des journaux ;
+- ELK (Elasticsearch, Logstash, Kibana) pour l'analyse des logs.
 
-L'intégration de ces outils offrirait des fonctionnalités avancées de visualisation et d'analyse.
+L'intégration de ces outils offrirait des fonctionnalités avancées de visualisation, de corrélation des événements et d'analyse des performances.
 
 ---
 
-# Tableaux de bord enrichis
+## Tableaux de bord enrichis
 
-Le dashboard Streamlit pourrait également évoluer afin de proposer de nouvelles visualisations.
+Le dashboard Streamlit pourrait également évoluer afin de proposer des visualisations plus complètes.
 
 Par exemple :
 
@@ -80,47 +84,67 @@ Par exemple :
 - performances par extracteur ;
 - répartition des erreurs ;
 - historique des exécutions ;
-- évolution des indicateurs de qualité.
+- évolution des indicateurs de qualité ;
+- évolution des taux de complétude ;
+- comparaisons entre plusieurs exécutions.
 
-Ces représentations faciliteraient l'analyse du comportement du pipeline.
+Ces représentations faciliteraient l'analyse du comportement du pipeline et le suivi de son évolution dans le temps.
 
 ---
 
-# Analyse prédictive
+## Analyse prédictive
 
-À plus long terme, il serait possible d'exploiter les données de monitoring afin de détecter automatiquement certains comportements inhabituels.
+À plus long terme, les données issues du monitoring pourraient être exploitées afin de détecter automatiquement certains comportements inhabituels.
 
 Une telle approche pourrait permettre :
 
 - d'anticiper une dégradation des performances ;
 - d'identifier des anomalies récurrentes ;
 - de détecter un changement de comportement d'une source de données ;
+- d'estimer le risque d'échec d'un traitement ;
 - de prévoir certains incidents avant qu'ils ne perturbent le pipeline.
 
-Cette évolution rapprocherait le dispositif de supervision des pratiques d'observabilité modernes.
+Cette évolution rapprocherait progressivement le dispositif de supervision des pratiques modernes d'observabilité et de maintenance prédictive.
 
 ---
 
-# Vers une plateforme de production
+## Renforcement de la résilience
 
-Les améliorations précédentes permettraient de faire évoluer CheckIt.AI vers une solution plus adaptée à un environnement de production.
+Une autre évolution consisterait à améliorer la capacité du pipeline à faire face automatiquement à certains incidents.
+
+Par exemple :
+
+- relance automatique de traitements temporaires en échec ;
+- reprise après interruption ;
+- mécanismes de bascule vers une source alternative ;
+- seuils de surveillance configurables ;
+- contrôle automatique de la disponibilité des services.
+
+Ces améliorations contribueraient à accroître la robustesse du pipeline et à limiter les interventions manuelles.
+
+---
+
+## Vers une plateforme de production
+
+Les améliorations précédentes permettraient de faire évoluer **CheckIt.AI** vers une solution davantage adaptée à un environnement de production.
 
 Le dispositif de monitoring gagnerait notamment en :
 
 - automatisation ;
 - réactivité ;
+- observabilité ;
 - capacité d'analyse ;
 - traçabilité ;
 - robustesse.
 
-Ces évolutions contribueraient à améliorer la disponibilité du pipeline et à simplifier son exploitation au quotidien.
+Ces évolutions contribueraient à simplifier l'exploitation quotidienne du pipeline tout en améliorant la fiabilité des traitements et la qualité des données produites.
 
 ---
 
-# Conclusion
+## Conclusion
 
-Le monitoring développé dans le cadre de CheckIt.AI constitue une base solide pour la supervision du pipeline ETL.
+Le monitoring développé dans le cadre de **CheckIt.AI** constitue une base solide pour la supervision du pipeline ETL.
 
-Grâce à l'orchestration assurée par Apache Airflow, aux rapports d'exécution, aux journaux, au stockage des indicateurs dans PostgreSQL et au dashboard Streamlit, il est possible de suivre efficacement le fonctionnement de la plateforme et d'identifier rapidement les anomalies.
+Grâce à l'orchestration assurée par Apache Airflow, aux rapports d'exécution, aux journaux, au stockage des données dans PostgreSQL et au dashboard Streamlit, il est possible de suivre efficacement le fonctionnement de la plateforme, d'évaluer la qualité des données produites et d'identifier rapidement les anomalies.
 
-Les évolutions proposées dans ce chapitre ouvrent la voie à une supervision plus automatisée, plus réactive et davantage orientée vers les exigences d'un environnement de production.
+Les perspectives présentées dans ce chapitre montrent que cette architecture peut évoluer progressivement vers un dispositif de supervision plus automatisé, plus réactif et davantage orienté vers les exigences d'un environnement de production et d'observabilité moderne.

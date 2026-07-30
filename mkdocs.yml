@@ -99,3 +99,13 @@ nav:
       - Dashboard de supervision: 07_resultats/03_dashboard.md
       - Limites du projet: 07_resultats/04_limites.md
       - Perspectives d'évolution: 07_resultats/05_perspectives.md
+
+  - 8. Monitoring:
+      - Introduction: 08_monitoring/index.md
+      - Objectifs du monitoring: 08_monitoring/01_objectifs.md
+      - Architecture de supervision: 08_monitoring/02_architecture.md
+      - Indicateurs de suivi (KPI): 08_monitoring/03_kpi.md
+      - Outils de supervision: 08_monitoring/04_outils.md
+      - Gestion des alertes: 08_monitoring/05_alertes.md
+      - Gestion des incidents: 08_monitoring/06_incidents.md
+      - Perspectives d'évolution: 08_monitoring/07_perspectives.md

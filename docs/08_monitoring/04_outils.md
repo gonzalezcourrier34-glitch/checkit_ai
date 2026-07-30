@@ -1,56 +1,57 @@
 # Outils de supervision
 
-# Introduction
+## Introduction
 
-Le dispositif de monitoring de CheckIt.AI repose sur plusieurs outils complémentaires. Chacun intervient à un niveau spécifique du pipeline et fournit des informations différentes permettant de superviser le fonctionnement de la plateforme.
+Le dispositif de monitoring de **CheckIt.AI** repose sur plusieurs outils complémentaires. Chacun intervient à un niveau spécifique du pipeline et fournit des informations différentes permettant de superviser le fonctionnement de la plateforme.
 
-Cette approche évite de dépendre d'un seul outil et facilite l'identification des anomalies lorsqu'un incident survient.
+Cette approche répartit les responsabilités entre plusieurs composants spécialisés, ce qui facilite le diagnostic des incidents, le suivi des traitements et l'analyse des performances.
 
 ---
 
-# Apache Airflow
+## Apache Airflow
 
 Apache Airflow assure l'orchestration complète du pipeline ETL.
 
-Il permet de superviser le déroulement des différentes étapes de traitement :
+Il supervise le déroulement des différentes étapes de traitement :
 
-- extraction des données ;
-- transformation ;
-- chargement dans PostgreSQL ;
-- contrôle qualité.
+- l'extraction des données ;
+- la transformation ;
+- le chargement dans PostgreSQL ;
+- le contrôle qualité.
 
 Pour chaque exécution, Airflow fournit notamment :
 
 - le statut des DAGs ;
+- le statut des tâches ;
 - la durée des traitements ;
 - l'historique des exécutions ;
 - les journaux d'exécution ;
 - les éventuelles erreurs.
 
-Ces informations permettent de vérifier rapidement que le pipeline s'est correctement déroulé.
+Ces informations permettent de suivre l'avancement des traitements et d'identifier rapidement les anomalies de fonctionnement.
 
 ---
 
-# PostgreSQL
+## PostgreSQL
 
-La base de données PostgreSQL constitue le référentiel principal des données produites par le pipeline.
+La base PostgreSQL constitue le référentiel principal des données produites par le pipeline.
 
-Au-delà du stockage des articles et des images, elle permet également de conserver différentes informations utilisées pour le suivi des traitements.
+Au-delà du stockage des articles, des images et des métadonnées, elle conserve également les informations nécessaires au calcul des indicateurs de supervision.
 
-Les principales tables exploitées dans le cadre du monitoring sont notamment :
+Les principales tables exploitées dans le cadre du monitoring concernent notamment :
 
 - les exécutions du pipeline ;
 - les articles collectés ;
 - les images téléchargées ;
 - les labels ;
 - les caractéristiques calculées ;
-- les métriques de traitement.
+- les informations utilisées pour produire les différents KPI.
 
-Ces données permettent de construire les différents indicateurs affichés dans le dashboard.
+Ces données permettent d'alimenter le dashboard et de suivre l'évolution du pipeline au fil des exécutions.
 
 ---
 
-# Rapports d'exécution
+## Rapports d'exécution
 
 Chaque étape du pipeline génère un rapport au format JSON.
 
@@ -62,17 +63,17 @@ Ils permettent notamment de retrouver :
 - les volumes de données ;
 - les temps d'exécution ;
 - les éventuelles erreurs ;
-- les informations spécifiques à chaque étape.
+- les indicateurs spécifiques à chaque étape.
 
-Ils constituent une source précieuse pour l'analyse d'une exécution passée.
+Ils constituent une source précieuse pour l'analyse d'une exécution passée et facilitent les opérations de diagnostic.
 
 ---
 
-# Journaux d'exécution
+## Journaux d'exécution
 
-L'ensemble des composants du projet produit des journaux (logs).
+L'ensemble des composants du projet produit des journaux d'exécution (logs).
 
-Ces derniers enregistrent les principales opérations réalisées durant l'exécution du pipeline.
+Ces derniers enregistrent les principales opérations réalisées durant le traitement.
 
 Ils permettent notamment de consulter :
 
@@ -82,11 +83,11 @@ Ils permettent notamment de consulter :
 - les temps de traitement ;
 - les informations de diagnostic.
 
-Les logs constituent généralement la première source d'information lors de la recherche d'un incident.
+Les logs constituent généralement la première source d'information lors de l'analyse d'un incident.
 
 ---
 
-# Dashboard Streamlit
+## Dashboard Streamlit
 
 Le dashboard développé avec Streamlit centralise les principales informations de supervision.
 
@@ -94,47 +95,48 @@ Il offre une interface graphique permettant de consulter rapidement :
 
 - l'état général du pipeline ;
 - les indicateurs de production ;
-- les statistiques de la base PostgreSQL ;
+- les statistiques issues de PostgreSQL ;
 - le statut des services ;
-- les principaux KPI.
+- les principaux KPI ;
+- les informations de qualité et de complétude des données.
 
-Cette interface facilite le suivi quotidien du pipeline sans avoir à consulter directement les différents outils techniques.
+Cette interface constitue le point d'entrée principal pour le suivi quotidien du pipeline sans nécessiter un accès direct aux différents outils techniques.
 
 ---
 
-# Docker
+## Docker
 
 L'ensemble de la plateforme est exécuté dans un environnement Docker.
 
 Cette approche facilite :
 
-- le déploiement ;
-- l'isolation des services ;
+- le déploiement des différents services ;
+- l'isolation des composants ;
 - la reproductibilité des exécutions ;
 - la maintenance de l'environnement.
 
-Le monitoring bénéficie ainsi d'un environnement stable et reproductible.
+Docker ne constitue pas un outil de monitoring à proprement parler, mais il fournit un environnement d'exécution stable et homogène qui facilite l'exploitation de la plateforme.
 
 ---
 
-# Complémentarité des outils
+## Complémentarité des outils
 
-Les différents outils utilisés ne remplissent pas les mêmes fonctions.
+Les différents outils utilisés interviennent à des niveaux complémentaires de la supervision.
 
 | Outil | Fonction principale |
 |--------|---------------------|
 | Apache Airflow | Orchestration et suivi des traitements |
-| PostgreSQL | Stockage des données et des indicateurs |
+| PostgreSQL | Stockage des données et des informations de supervision |
 | Rapports JSON | Traçabilité des traitements |
 | Logs | Diagnostic des incidents |
-| Dashboard Streamlit | Visualisation des indicateurs |
-| Docker | Exécution des services |
+| Dashboard Streamlit | Centralisation et visualisation des indicateurs |
+| Docker | Exécution et isolation des services |
 
-Cette répartition permet de disposer d'une supervision complète tout en conservant une architecture modulaire.
+Cette répartition permet de disposer d'une supervision complète tout en conservant une architecture modulaire où chaque composant remplit une responsabilité clairement définie.
 
 ---
 
-# Vue d'ensemble
+## Vue d'ensemble
 
 Le schéma suivant illustre les interactions entre les différents outils utilisés pour la supervision.
 
@@ -158,14 +160,16 @@ Rapports_JSON --> Dashboard
 Logs --> Dashboard
 ```
 
-Le dashboard constitue le point d'entrée principal pour consulter les informations de supervision, tandis que les autres outils fournissent les données nécessaires au suivi détaillé du pipeline.
+Le dashboard constitue le point d'entrée principal pour consulter les informations de supervision, tandis que les autres composants fournissent les données nécessaires au suivi détaillé du pipeline.
 
 ---
 
-# Conclusion
+## Conclusion
 
-Le monitoring de CheckIt.AI repose sur plusieurs outils complémentaires qui assurent chacun une partie de la supervision.
+Le monitoring de **CheckIt.AI** repose sur plusieurs outils complémentaires qui interviennent à différents niveaux du pipeline.
 
-Cette architecture permet de suivre les traitements en temps réel, d'analyser les performances, de diagnostiquer les erreurs et de garantir la qualité des données produites.
+Apache Airflow assure l'orchestration des traitements, PostgreSQL centralise les données utilisées pour le calcul des indicateurs, les rapports JSON et les journaux facilitent le diagnostic, tandis que le dashboard Streamlit rassemble ces informations au sein d'une interface unique.
 
-Le chapitre suivant présente les différentes situations susceptibles de déclencher une alerte ainsi que les actions associées.
+Cette architecture permet de suivre le fonctionnement du pipeline, d'analyser les performances, de contrôler la qualité des données produites et de faciliter les opérations de maintenance.
+
+Le chapitre suivant présente les différentes situations susceptibles de déclencher une alerte ainsi que les actions pouvant être mises en œuvre pour y répondre.

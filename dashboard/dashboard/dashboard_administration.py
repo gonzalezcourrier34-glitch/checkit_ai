@@ -758,29 +758,306 @@ def render_database_section() -> None:
 def render_table_counts(
     counts: dict[str, int]
 ) -> None:
-    """Affiche le nombre de lignes des tables."""
+    """Affiche les volumes PostgreSQL sous forme de synthèse visuelle."""
 
     render_layout_section_header(
         "📦",
         "Contenu des tables",
-        "Nombre de lignes actuellement présentes dans chaque table."
+        (
+            "Répartition et comparaison des volumes actuellement "
+            "stockés dans PostgreSQL."
+        )
     )
 
-    if not counts:
+    normalized_counts = normalize_table_counts(counts)
+
+    if not normalized_counts:
         st.info(
             "Aucune statistique de table n'est disponible."
         )
         return
 
+    render_table_count_summary(normalized_counts)
+
+    bar_column, pie_column = st.columns([3, 2])
+
+    with bar_column:
+        with st.container(border=True):
+            render_table_count_bar_chart(normalized_counts)
+
+    with pie_column:
+        with st.container(border=True):
+            render_table_count_donut_chart(normalized_counts)
+
+    with st.expander(
+        "Afficher les volumes détaillés par table"
+    ):
+        render_table_count_metrics(normalized_counts)
+
+
+def normalize_table_counts(
+    counts: dict[str, int]
+) -> list[dict[str, Any]]:
+    """Normalise les volumes de tables pour leur visualisation."""
+
+    normalized_counts = []
+
+    for table_name, raw_count in counts.items():
+        try:
+            count = max(0, int(raw_count))
+        except (TypeError, ValueError):
+            logger.warning(
+                "Volume PostgreSQL invalide pour la table %s : %r",
+                table_name,
+                raw_count
+            )
+            continue
+
+        normalized_counts.append({
+            "table": table_name,
+            "label": format_table_label(table_name),
+            "count": count
+        })
+
+    return sorted(
+        normalized_counts,
+        key=lambda item: item["count"],
+        reverse=True
+    )
+
+
+def format_table_label(table_name: str) -> str:
+    """Retourne un libellé lisible pour une table PostgreSQL."""
+
+    return table_name.replace("_", " ").strip().capitalize()
+
+
+def render_table_count_summary(
+    normalized_counts: list[dict[str, Any]]
+) -> None:
+    """Affiche les principaux indicateurs de volumétrie."""
+
+    total_rows = sum(
+        int(item["count"])
+        for item in normalized_counts
+    )
+    populated_tables = sum(
+        1
+        for item in normalized_counts
+        if int(item["count"]) > 0
+    )
+    largest_table = normalized_counts[0]
+
+    render_metric_cards(
+        [
+            (
+                "Enregistrements",
+                format_number(total_rows)
+            ),
+            (
+                "Tables alimentées",
+                f"{populated_tables} / {len(normalized_counts)}"
+            ),
+            (
+                "Table principale",
+                str(largest_table["label"])
+            ),
+            (
+                "Volume principal",
+                format_number(largest_table["count"])
+            )
+        ],
+        columns_count=4
+    )
+
+
+def render_table_count_bar_chart(
+    normalized_counts: list[dict[str, Any]]
+) -> None:
+    """Affiche un histogramme horizontal des volumes par table."""
+
+    st.markdown("#### Volumes par table")
+    st.caption(
+        "L'histogramme facilite la comparaison précise entre les tables."
+    )
+
+    dataframe = rows_to_dataframe(normalized_counts)[
+        ["label", "count"]
+    ]
+
+    st.bar_chart(
+        dataframe,
+        x="label",
+        y="count",
+        horizontal=True,
+        width="stretch",
+        height=max(300, len(normalized_counts) * 45),
+        x_label="Nombre d'enregistrements",
+        y_label="Table"
+    )
+
+
+def render_table_count_donut_chart(
+    normalized_counts: list[dict[str, Any]]
+) -> None:
+    """Affiche la répartition des enregistrements dans un anneau."""
+
+    st.markdown("#### Répartition globale")
+    st.caption(
+        "L'anneau montre le poids relatif de chaque table dans la base."
+    )
+
+    populated_counts = [
+        item
+        for item in normalized_counts
+        if int(item["count"]) > 0
+    ]
+
+    if not populated_counts:
+        st.info(
+            "Aucune table ne contient actuellement de données."
+        )
+        return
+
+    total_rows = sum(
+        int(item["count"])
+        for item in populated_counts
+    )
+    colors = [
+        "#f59e0b",
+        "#fb7185",
+        "#38bdf8",
+        "#34d399",
+        "#a78bfa",
+        "#facc15",
+        "#94a3b8",
+        "#f97316"
+    ]
+    gradient_parts = []
+    legend_rows = []
+    current_percentage = 0.0
+
+    for index, item in enumerate(populated_counts):
+        percentage = (int(item["count"]) / total_rows) * 100
+        next_percentage = current_percentage + percentage
+        color = colors[index % len(colors)]
+
+        gradient_parts.append(
+            f"{color} {current_percentage:.2f}% {next_percentage:.2f}%"
+        )
+        legend_rows.append(
+            build_donut_legend_row(
+                label=str(item["label"]),
+                count=int(item["count"]),
+                percentage=percentage,
+                color=color
+            )
+        )
+        current_percentage = next_percentage
+
+    gradient = ", ".join(gradient_parts)
+    legend_html = "".join(legend_rows)
+
+    st.markdown(
+        f"""
+        <div style="
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            min-height: 310px;
+        ">
+            <div style="
+                width: 190px;
+                height: 190px;
+                border-radius: 50%;
+                background: conic-gradient({gradient});
+                display: grid;
+                place-items: center;
+                flex: 0 0 auto;
+            ">
+                <div style="
+                    width: 112px;
+                    height: 112px;
+                    border-radius: 50%;
+                    background: var(--secondary-background-color);
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
+                ">
+                    <strong style="font-size: 1.25rem;">
+                        {format_number(total_rows)}
+                    </strong>
+                    <span style="font-size: 0.75rem; opacity: 0.75;">
+                        enregistrements
+                    </span>
+                </div>
+            </div>
+            <div style="min-width: 190px; flex: 1;">
+                {legend_html}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def build_donut_legend_row(
+    *,
+    label: str,
+    count: int,
+    percentage: float,
+    color: str
+) -> str:
+    """Construit une ligne de légende pour l'anneau des volumes."""
+
+    return f"""
+        <div style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.35rem 0;
+        ">
+            <div style="
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                min-width: 0;
+            ">
+                <span style="
+                    width: 10px;
+                    height: 10px;
+                    border-radius: 3px;
+                    background: {color};
+                    flex: 0 0 auto;
+                "></span>
+                <span style="
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                ">{label}</span>
+            </div>
+            <span style="white-space: nowrap; opacity: 0.78;">
+                {format_number(count)} · {percentage:.1f} %
+            </span>
+        </div>
+    """
+
+def render_table_count_metrics(
+    normalized_counts: list[dict[str, Any]]
+) -> None:
+    """Affiche les valeurs exactes de chaque table."""
+
     metrics = [
         (
-            table_name.replace(
-                "_",
-                " "
-            ).capitalize(),
-            format_number(counts[table_name])
+            str(item["label"]),
+            format_number(item["count"])
         )
-        for table_name in sorted(counts)
+        for item in normalized_counts
     ]
 
     render_metric_cards(
